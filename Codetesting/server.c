@@ -15,7 +15,6 @@ int main (void) {
 	ssize_t size;
 	struct sockaddr_in address;
 	const int y = 1;
-	printf ("\e[2J");
 
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0)
 		printf ("Socket wurde angelegt\n");
