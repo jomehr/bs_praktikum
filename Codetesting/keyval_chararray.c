@@ -4,19 +4,18 @@
 #define ROW 100
 #define COL 2
 
-int x=0;
 char value[20];
 char key[20];
+char res[20];
 
 int inputKey();
-char* get(char *key, char *keyval[ROW][COL]);
-int put(char *key, char *value, char *keyval[ROW][COL]);
-char* del(char *key, char *keyval[ROW][COL]);
+char* get(char* key, char* keyval[ROW][COL], char* res);
+int put(char* key, char* value, char* keyval[ROW][COL]);
+char* del(char* key, char* keyval[ROW][COL], char* res);
 
 int main(){
   int itemNum=0;
-  char *kv[ROW][COL];
-
+  char* kv[ROW][COL];
 
   while(1){
     printf("Select 1:Put 2:Get 3:Delete 4:Exit\n");
@@ -33,12 +32,12 @@ int main(){
       case 2:
         printf("2.Get selected.\n");
         inputKey();
-        printf("Value: %s\n", get(key, kv));
+        printf("Value: %s\n", get(key, kv, res));
         break;
       case 3:
         printf("3.Delete selected.\n");
         inputKey();
-        del(key,kv);
+        del(key, kv, res);
         break;
       default:
         printf("Program ended.\n");
@@ -53,47 +52,155 @@ int inputKey(){
   return 0;
 }
 
-char* get(char *key, char *keyval[ROW][COL]){
-  strcpy(value,"-1");
-  for (x=0; x <ROW;x++) {
-    if(strcmp(keyval[x][0],key)==0){
-      return keyval[x][1];
+char* get(char* key, char* keyval[ROW][COL], char* res){
+  strcpy(res,"-1");
+  int i;
+  for (i=0;i<ROW;i++) {
+    if(strcmp(keyval[i][0],key)==0){
+      strcpy(res,keyval[i][1]);
+      return res;
     }
   }
-  return value;
+  return res;
 }
 
-int put(char *key, char *value, char *keyval[ROW][COL]){
+int put(char* key, char* value, char* keyval[ROW][COL]){
   int i;
-  for (x=0;x<ROW;x++) {
-    if(strcmp(keyval[x][0],key)==0){
-      strcpy(keyval[x][1],value);
-      return 1;
+  for (i=0;i<ROW;i++) {
+    if(strcmp(keyval[i][0],key)==0){
+      strcpy(keyval[i][1],value);
+      return 0;
     }
   }
   for(i=0;i<ROW;i++) {
-    if(keyval[x][0]==NULL){
-      strcpy(keyval[x][0],key);
-      strcpy(keyval[x][1],value);
-      return 1;
+    if(keyval[i][0]==NULL){
+      strcpy(keyval[i][0],key);
+      strcpy(keyval[i][1],value);
+      return 0;
     }
   }
   return -1;
 }
 
-char* del(char *key, char *keyval[ROW][COL]){
-  strcpy(value,"-1");
-  char* tmp;
-  strcpy(value,tmp);
-  for (x=0;x<ROW;x++) {
-    if(strcmp(keyval[x][0],key)==0){
-      *keyval[x][0]=NULL;
-      *keyval[x][1]=NULL;
+char* del(char* key, char* keyval[ROW][COL], char* res){
+  strcpy(res,"-1");
+  int i;
+  for (i=0;i<ROW;i++) {
+    if(strcmp(keyval[i][0],key)==0){
+      strcpy(res,keyval[i][0]);
+      *keyval[i][0]=NULL;
+      *keyval[i][1]=NULL;
       break;
     }
-    return tmp;
+  }
+  return res;
+}
+10:30am
+#include <stdio.h>
+#include <string.h>
 
+#define ROW 100
+#define COL 2
+
+int inputKey(char* key);
+char* get(char* key, char* keyval[ROW][COL], char* res);
+int put(char* key, char* value, char* keyval[ROW][COL]);
+char* del(char* key, char* keyval[ROW][COL], char* res);
+
+int main(){
+  char value[20];
+  char key[20];
+  char res[20];
+  int itemNum=0;//switch menu
+  char* kv[ROW][COL]={NULL};
+  int i;
+  //fill 2d array
+  for(i=0;i<ROW;i++){
+    kv[i][0]="key";
+    kv[i][1]="value";
+    /*if(i>ROW-10){
+      kv[i][0]=NULL;
+      kv[i][1]=NULL;
+    }*/
+    printf("kv now has %s and %s \n", kv[i][0],kv[i][1] );
   }
 
-  return value;
+  while(1){
+    printf("Select 1:Put 2:Get 3:Delete 4:Exit\n");
+    scanf("%i",&itemNum);
+    switch(itemNum){
+      case 1:
+        printf("1.Put selected.\n");
+        inputKey(key);
+        printf("Enter value: ");
+        scanf("%s",value);
+        put(key, value, kv);
+        break;
+      case 2:
+        printf("2.Get selected.\n");
+        inputKey(key);
+        printf("Value: %s\n", get(key, kv, res));
+        break;
+      case 3:
+        printf("3.Delete selected.\n");
+        inputKey(key);
+        del(key, kv, res);
+        break;
+      default:
+        printf("Program ended.\n");
+        return 0;
+    }
+  }
+}
+
+int inputKey(char* key){
+  printf("Enter key: ");
+  scanf("%s",key);
+  return 0;
+}
+
+char* get(char* key, char* keyval[ROW][COL], char* res){
+  strcpy(res,"-1");
+  int i;
+  for (i=0;i<ROW;i++) {
+    if(strcmp(keyval[i][0],key)==0){
+      strcpy(res,keyval[i][1]);
+      return res;
+    }
+  }
+  return res;
+}
+
+int put(char* key, char* value, char* keyval[ROW][COL]){
+  int i;
+  /*for (i=0;i<ROW;i++) {
+    if(strcmp(keyval[i][0],key)==0){
+      strcpy(keyval[i][1],value);
+      return 0;
+    }
+  }*/
+  for(i=0;i<ROW;i++) {
+    if(keyval[i][0]==NULL){
+      printf("%s found at %i\n",keyval[i][0],i);
+      strcpy(keyval[i][0],key);
+      printf("Yes1\n");
+      strcpy(keyval[i][1],value);
+      return 0;
+    }
+  }
+  return -1;
+}
+
+char* del(char* key, char* keyval[ROW][COL], char* res){
+  strcpy(res,"-1");
+  int i;
+  for (i=0;i<ROW;i++) {
+    if(strcmp(keyval[i][0],key)==0){
+      strcpy(res,keyval[i][0]);
+      keyval[i][0]=NULL;
+      keyval[i][1]=NULL;
+      break;
+    }
+  }
+  return res;
 }
