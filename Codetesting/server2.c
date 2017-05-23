@@ -19,9 +19,9 @@ char *kv[ROW][COL];
 int i=0;
 
 int inputKey();
-char* get(char *key, char *keyval[ROW][COL]);
-int put(char *key, char *value, char *keyval[ROW][COL]);
-char* del(char *key, char *keyval[ROW][COL]);
+char* get(char* key, char* keyval[ROW][COL], char* res);
+int put(char* key, char* value, char* keyval[ROW][COL]);
+char* del(char* key, char* keyval[ROW][COL], char* res);
 
 int main (void) {
 	int create_socket, new_socket;
@@ -31,6 +31,9 @@ int main (void) {
 	struct sockaddr_in address;
 	const int y = 1;
 	char res[20];
+	char put[3] = {"put"};
+	char get[3] = {"get"};
+	char del[3] = {"del"};
 
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0)
 		printf ("Socket wurde angelegt\n");
@@ -54,32 +57,42 @@ int main (void) {
 			printf ("Ein Client (%s) ist verbunden ...\n", inet_ntoa (address.sin_addr));
 
 		do {
-			char string[50];
-			char* token;
+			//char string[50];
+			char *token;
 			size = recv (new_socket, buffer, BUF-1, 0);
 			printf("%s\n", buffer);
 
 			char delimiter[] = " ";
-			token = strtok(string, delimiter);
+			token = strtok(buffer, delimiter);
 
 			while(token != NULL) {
-				printf("Abschnitt gefunden: %s\n", token);
+				//strcpy(token[0],put);
+				if (strcmp(token, put)== 0) {
+
+					strcpy(put, strtok(token, " "));
+					strcpy(key, strtok(token, " "));
+					strcpy(value, strtok(token, " "));
+					printf("%s\n", put);
+					printf("%s\n", key);
+					printf("%s\n", value);
+				}
+				//printf("Abschnitt gefunden: %s\n", token);
 				// naechsten Abschnitt erstellen
  				token = strtok(NULL, delimiter);
+
+
 			}
 
 			if( size > 0)
 				buffer[size] = '\0';
 
-		while (strstr (buffer, "quit") != 0);
-
-		close (new_socket);
-	}
-
-	close (create_socket);
-
-	return EXIT_SUCCESS;
+	} while (strcmp (buffer, "quit\n") != 0);
 }
+
+close (new_socket);
+close (create_socket);
+
+return EXIT_SUCCESS;
 }
 
 int inputKey(){
