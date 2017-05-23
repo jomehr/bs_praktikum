@@ -6,11 +6,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #define BUF 1024
 #define ROW 100
 #define COL 3
-char value[20];
-char key[20];
 int x=0;
 int j=0;
 int index_int=1;
@@ -18,10 +17,10 @@ int itemNum=0;
 char *kv[ROW][COL];
 int i=0;
 
-int inputKey();
-char* get(char* key, char* keyval[ROW][COL], char* res);
-int put(char* key, char* value, char* keyval[ROW][COL]);
-char* del(char* key, char* keyval[ROW][COL], char* res);
+// int inputKey();
+// char* get(char* key, char* keyval[ROW][COL], char* res);
+// int put(char* key, char* value, char* keyval[ROW][COL]);
+// char* del(char* key, char* keyval[ROW][COL], char* res);
 
 int main (void) {
 	int create_socket, new_socket;
@@ -31,9 +30,12 @@ int main (void) {
 	struct sockaddr_in address;
 	const int y = 1;
 	char res[20];
-	char put[3] = {"put"};
-	char get[3] = {"get"};
-	char del[3] = {"del"};
+	char *put[3];
+	char *get[3];
+	char *del[3];
+	char *value[20];
+	char *key[20];
+	char *str[100];
 
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0)
 		printf ("Socket wurde angelegt\n");
@@ -57,34 +59,25 @@ int main (void) {
 			printf ("Ein Client (%s) ist verbunden ...\n", inet_ntoa (address.sin_addr));
 
 		do {
-			//char string[50];
-			char *token;
-			size = recv (new_socket, buffer, BUF-1, 0);
+
+			bzero(buffer,BUF);
+
+			size = recv (new_socket, buffer, BUF, 0);
 			printf("%s\n", buffer);
 
-			char delimiter[] = " ";
-			token = strtok(buffer, delimiter);
+			strtoken(buffer, " \0", str, 3);
+			printf("%s\n", str[0]);
+			printf("%s\n", str[1]);
+			printf("%s\n", str[2]);
 
-			while(token != NULL) {
-				//strcpy(token[0],put);
-				if (strcmp(token, put)== 0) {
+			if( strcmp(str[0], "put")==0)
+				printf("Jetzt wird die put Funktion ausgeführt\n");
 
-					strcpy(put, strtok(token, " "));
-					strcpy(key, strtok(token, " "));
-					strcpy(value, strtok(token, " "));
-					printf("%s\n", put);
-					printf("%s\n", key);
-					printf("%s\n", value);
-				}
-				//printf("Abschnitt gefunden: %s\n", token);
-				// naechsten Abschnitt erstellen
- 				token = strtok(NULL, delimiter);
+			if( strcmp(str[0], "get")==0)
+				printf("Jetzt wird die get Funktion ausgeführt\n");
 
-
-			}
-
-			if( size > 0)
-				buffer[size] = '\0';
+				if( strcmp(str[0], "get")==0)
+					printf("Jetzt wird die get Funktion ausgeführt\n");
 
 	} while (strcmp (buffer, "quit\n") != 0);
 }
@@ -95,11 +88,11 @@ close (create_socket);
 return EXIT_SUCCESS;
 }
 
-int inputKey(){
-    printf("Enter key: ");
-    scanf("%s",key);
-    return 0;
-	}
+// int inputKey(){
+//     printf("Enter key: ");
+//     scanf("%s",key);
+//     return 0;
+// 	}
 
 char* get(char* key, char* keyval[ROW][COL], char* res){
   strcpy(res,"-1");
@@ -145,6 +138,14 @@ char* del(char* key, char* keyval[ROW][COL], char* res){
     }
   }
   return res;
+}
+
+int strtoken(char *str, char *separator, char **token, int size) {
+    int i=0;
+    token[0] = strtok(str, separator);
+    while(token[i++] && i < size)
+        token[i] = strtok(NULL, separator);
+    return (i);
 }
 
 // while(1){
