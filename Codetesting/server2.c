@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
 #define BUF 1024
 #define ROW 100
 #define COL 3
@@ -16,6 +19,9 @@ int index_int=1;
 int itemNum=0;
 char *kv[ROW][COL];
 int i=0;
+#define MAXCOUNT 1000000
+#define NUM_OF_CHILDS 2
+#define SEGSIZE sizeof(int)
 
 // int inputKey();
 // char* get(char* key, char* keyval[ROW][COL], char* res);
@@ -36,6 +42,11 @@ int main (void) {
 	char *value[20];
 	char *key[20];
 	char *str[100];
+	int id = shmget(IPC_PRIVATE, SEGSIZE, IPC_CREAT|0600);
+	int shar_mem= (int*)shmat(id, 0, 0);
+	*shar_mem= 0;
+	int pid [NUM_OF_CHILDS];
+
 
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0)
 		printf ("Socket wurde angelegt\n");
@@ -55,20 +66,30 @@ int main (void) {
 	while (1) {
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
 
+		for(i = 0; i < NUM_OF_CHILDS; i++){
+	    pid[i] = fork();
+	    if(pid[i] == -1){
+	      printf("Kindprozess konnte nicht erzeugt werden!\n");
+	      exit(1);
+	    }
+	  }
+
 		if (new_socket > 0)
 			printf ("Ein Client (%s) ist verbunden ...\n", inet_ntoa (address.sin_addr));
+			char clientnachricht[] = "Geben Sie put / get / del mit je einem key und value ein: \n";
+			send (new_socket, clientnachricht, sizeof (clientnachricht), 0);
 
 		do {
 
 			bzero(buffer,BUF);
 
-			size = recv (new_socket, buffer, BUF, 0);
+			recv (new_socket, buffer, BUF, 0);
 			printf("%s\n", buffer);
 
 			strtoken(buffer, " \0", str, 3);
-			printf("%s\n", str[0]);
-			printf("%s\n", str[1]);
-			printf("%s\n", str[2]);
+			printf("Funktion: %s\n", str[0]);
+			printf("Key: %s\n", str[1]);
+			printf("Value: %s\n", str[2]);
 
 			if( strcmp(str[0], "put")==0)
 				printf("Jetzt wird die put Funktion ausgeführt\n");
@@ -76,11 +97,19 @@ int main (void) {
 			if( strcmp(str[0], "get")==0)
 				printf("Jetzt wird die get Funktion ausgeführt\n");
 
-				if( strcmp(str[0], "get")==0)
-					printf("Jetzt wird die get Funktion ausgeführt\n");
+			if( strcmp(str[0], "del")==0)
+				printf("Jetzt wird die del Funktion ausgeführt\n");
 
 	} while (strcmp (buffer, "quit\n") != 0);
 }
+
+/* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
+for(i = 0; i < NUM_OF_CHILDS; i++){
+	waitpid(pid[i], NULL, 0);
+}
+/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
+shmdt(shar_mem);
+shmctl(id, IPC_RMID, 0);
 
 close (new_socket);
 close (create_socket);
