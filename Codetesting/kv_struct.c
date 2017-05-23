@@ -1,25 +1,27 @@
+//KEY-VALUE STORE mit einer Strukt-Datenstruktur
 #include <stdio.h>
 #include <string.h>
 
 #define BUFFER_SIZE 1024
+#define KV_STRING 50
 
 int put(char* key, char* value, char* res);
-int get();
-int del();
-void list();
+int get(char* key, char* res);
+int del(char* key, char* res);
+void list(char* res);
 
 struct Data{
-  char key[BUFFER_SIZE][1];
-  char value[BUFFER_SIZE][1];
-  int delFlag[BUFFER_SIZE];//1 represents deleted
-  int size;//letzter Index im Array
-  int realSize;//Menge der Eintraege
+  char key[BUFFER_SIZE][KV_STRING];
+  char value[BUFFER_SIZE][KV_STRING];
+  int delFlag[BUFFER_SIZE];           //1 = geloescht
+  int size;                           //letzter Index vom Array
+  int realSize;                       //Menge der Eintraege im Array
 };
-
+//Hier wird nur die Variable KVStore um Funktionalitaet erweitert
+//und nicht das struct selbst!
 struct Data KVStore;
 
 int main(){
-
   char key[BUFFER_SIZE];
   char value[BUFFER_SIZE];
   char res[BUFFER_SIZE];
@@ -35,16 +37,32 @@ int main(){
         printf("Enter key followed by value\n");
         scanf("%s",key);
         scanf("%s",value);
-        put(key, value, res);break;
+        put(key, value, res);
+        //res hat 'Put successful![...]'
+        printf("Result: %s\n", res);
+        break;
       case 2:
         printf("Get selected.\n");
-        get();break;
+        printf("Enter key\n");
+        scanf("%s",key);
+        get(key,res);
+        //res hat KVStore Value oder 'Key not found!'
+        printf("Result: %s\n", res);
+        break;
       case 3:
         printf("Delete selected.\n");
-        del();break;
+        printf("Enter key\n");
+        scanf("%s",key);
+        del(key,res);
+        //res hat KVStore Value oder 'Key not found!'
+        printf("Result: %s\n", res);
+        break;
       case 4:
         printf("Display selected.\n");
-        list();break;
+        list(res);
+        //res hat KVStore Groesse
+        printf("Result(size): %s\n", res);
+        break;
       default:
         printf("Program ended.\n");
         return 0;
@@ -58,8 +76,8 @@ int put(char* key, char* value, char* res){
   for(i=0;i<KVStore.size;i++){
     if(strcmp(KVStore.key[i],key)==0){
       strcpy(KVStore.value[i],value);
-      printf("Existing entry replaced\n");
-      return 1;//success
+      strcpy(res,"Put successful! Existing entry replaced.");
+      return 1;
     }
   }
   for(i=0;i<KVStore.size;i++){
@@ -68,41 +86,61 @@ int put(char* key, char* value, char* res){
         strcpy(KVStore.value[i],value);
         KVStore.delFlag[i]=0;
         KVStore.realSize++;
-        printf("Deleted entry replaced\n");
-        return 1;//success
+        strcpy(res,"Put successful! Deleted entry replaced.");
+        return 2;
     }
   }
-  printf("Before put: %s\n", KVStore.key[KVStore.size]);
-  printf("Before put: %s\n", KVStore.value[KVStore.size]);
   strcpy(KVStore.key[KVStore.size],key);
   strcpy(KVStore.value[KVStore.size],value);
-  printf("After put: %s\n", KVStore.key[KVStore.size]);
-  printf("After put: %s\n", KVStore.value[KVStore.size]);
   KVStore.size++;
   KVStore.realSize++;
-  printf("Put completed\n");
-
+  strcpy(res,"Put successful!");
   return 0;
 }
 
-int get(){
-  return 0;
-}
-
-int del(){
-  return 0;
-}
-
-void list(){
+int get(char* key, char* res){
+  strcpy(res, "");
   int i;
+  for (i=0; i<KVStore.size;i++) {
+    if(strcmp(KVStore.key[i],key)==0){
+      strcpy(res,KVStore.value[i]);
+      return 0;
+    }
+  }
+  strcpy(res,"Key not found!");
+  return 1;
+}
+
+int del(char* key, char* res){
+  strcpy(res, "");
+  int i;
+  for(i=0;i<KVStore.size;i++){
+    if(strcmp(KVStore.key[i],key)==0){
+      strcpy(res,KVStore.value[i]);
+      KVStore.delFlag[i]=1;
+      strcpy(KVStore.key[i],"");
+      strcpy(KVStore.value[i],"");
+      KVStore.realSize--;
+      return 0;
+    }
+  }
+  strcpy(res,"Key not found!");
+  return 1;
+}
+
+void list(char* res){
+  strcpy(res, "");
+  char buf[BUFSIZ];
+  snprintf(buf, sizeof(buf), "%d", KVStore.size);//int wird zum char array konvertiert
+  strcpy(res, buf);
   if(KVStore.size==0){
-    printf("No elements found\n");
+    printf("No element found!");
     return;
   }
-  printf("KV Store size: %i\n",KVStore.size );
+  int i;
   for(i=0;i<KVStore.size;i++){
     if(KVStore.delFlag[i]!=1){
-      printf("Index: %i - Key: %s, Value: %s\n", i, KVStore.key[i], KVStore.value[i]);
+      printf("Index : %i - Key : %s ; Value : %s ;\n", i, KVStore.key[i], KVStore.value[i]);
     }
   }
   return;
