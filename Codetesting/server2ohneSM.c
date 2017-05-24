@@ -8,19 +8,24 @@
 #include <string.h>
 #include <strings.h>
 #define BUF 1024
-#define ROW 100
-#define COL 3
-int x=0;
-int j=0;
-int index_int=1;
-int itemNum=0;
-char *kv[ROW][COL];
-int i=0;
+#define BUFFER_SIZE 1024
+#define KV_STRING 50
 
-// int inputKey();
-// char* get(char* key, char* keyval[ROW][COL], char* res);
-// int put(char* key, char* value, char* keyval[ROW][COL]);
-// char* del(char* key, char* keyval[ROW][COL], char* res);
+int put(char* key, char* value, char* res);
+int get(char* key, char* res);
+int del(char* key, char* res);
+void list(char* res);
+
+struct Data{
+  char key[BUFFER_SIZE][KV_STRING];
+  char value[BUFFER_SIZE][KV_STRING];
+  int delFlag[BUFFER_SIZE];           //1 = geloescht
+  int size;                           //letzter Index vom Array
+  int realSize;                       //Menge der Eintraege im Array
+};
+//Hier wird nur die Variable KVStore um Funktionalitaet erweitert
+//und nicht das struct selbst!
+struct Data KVStore;
 
 int main (void) {
 	int create_socket, new_socket;
@@ -29,13 +34,10 @@ int main (void) {
 	ssize_t size;
 	struct sockaddr_in address;
 	const int y = 1;
-	char res[20];
-	char *put[3];
-	char *get[3];
-	char *del[3];
-	char *value[20];
-	char *key[20];
 	char *str[100];
+	char key[BUFFER_SIZE];
+	char value[BUFFER_SIZE];
+	char res[BUFFER_SIZE];
 
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0)
 		printf ("Socket wurde angelegt\n");
@@ -70,14 +72,23 @@ int main (void) {
 			printf("%s\n", str[1]);
 			printf("%s\n", str[2]);
 
-			if( strcmp(str[0], "put")==0)
+			if( strcmp(str[0], "put")==0){
 				printf("Jetzt wird die put Funktion ausgeführt\n");
+				put(str[1], str[2], res);
+				printf("Ergebnis: %s\n", res);
+			}
 
-			if( strcmp(str[0], "get")==0)
+			if( strcmp(str[0], "get")==0){
 				printf("Jetzt wird die get Funktion ausgeführt\n");
+				get(str[1], res);
+				printf("Ergebnis: %s\n", res);
+			}
 
-				if( strcmp(str[0], "get")==0)
-					printf("Jetzt wird die get Funktion ausgeführt\n");
+				if( strcmp(str[0], "del")==0){
+					printf("Jetzt wird die del Funktion ausgeführt\n");
+					del(str[1], res);
+					printf("Ergebnis: %s\n", res);
+				}
 
 	} while (strcmp (buffer, "quit\n") != 0);
 }
@@ -88,58 +99,6 @@ close (create_socket);
 return EXIT_SUCCESS;
 }
 
-// int inputKey(){
-//     printf("Enter key: ");
-//     scanf("%s",key);
-//     return 0;
-// 	}
-
-char* get(char* key, char* keyval[ROW][COL], char* res){
-  strcpy(res,"-1");
-  int i;
-  for (i=0;i<ROW;i++) {
-    if(strcmp(keyval[i][0],key)==0){
-      strcpy(res,keyval[i][1]);
-      return res;
-		}
-  }
-  return res;
-}
-
-int put(char* key, char* value, char* keyval[ROW][COL]){
-  int i;
-  /*for (i=0;i<ROW;i++) {
-    if(strcmp(keyval[i][0],key)==0){
-      strcpy(keyval[i][1],value);
-      return 0;
-    }
-  }*/
-  for(i=0;i<ROW;i++) {
-    if(keyval[i][0]==NULL){
-      printf("%s found at %i\n",keyval[i][0],i);
-      strcpy(keyval[i][0],key);
-      printf("Yes1\n");
-      strcpy(keyval[i][1],value);
-      return 0;
-    }
-  }
-  return -1;
-}
-
-char* del(char* key, char* keyval[ROW][COL], char* res){
-  strcpy(res,"-1");
-  int i;
-  for (i=0;i<ROW;i++) {
-    if(strcmp(keyval[i][0],key)==0){
-      strcpy(res,keyval[i][0]);
-      keyval[i][0]=NULL;
-      keyval[i][1]=NULL;
-      break;
-    }
-  }
-  return res;
-}
-
 int strtoken(char *str, char *separator, char **token, int size) {
     int i=0;
     token[0] = strtok(str, separator);
@@ -148,29 +107,77 @@ int strtoken(char *str, char *separator, char **token, int size) {
     return (i);
 }
 
-// while(1){
-// 	printf("Select 1:Put 2:Get 3:Delete 4:Exit\n");
-// 	scanf("%i",&itemNum);
-// 	switch(itemNum){
-// 		case 1:
-// 			printf("1.Put selected.\n");
-// 			inputKey(key);
-// 			printf("Enter value: ");
-// 			scanf("%s",value);
-// 			put(key, value, kv);
-// 			break;
-// 		case 2:
-// 			printf("2.Get selected.\n");
-// 			inputKey(key);
-// 			printf("Value: %s\n", get(key, kv, res));
-// 			break;
-// 		case 3:
-// 			printf("3.Delete selected.\n");
-// 			inputKey(key);
-// 			del(key, kv, res);
-// 			break;
-// 		default:
-// 			printf("Program ended.");
-// 			return 0;
-// 		}
-// 	}
+int put(char* key, char* value, char* res){
+  int i;
+  for(i=0;i<KVStore.size;i++){
+    if(strcmp(KVStore.key[i],key)==0){
+      strcpy(KVStore.value[i],value);
+      strcpy(res,"Put successful! Existing entry replaced.");
+      return 1;
+    }
+  }
+  for(i=0;i<KVStore.size;i++){
+    if(KVStore.delFlag[i]==1){
+        strcpy(KVStore.key[i],key);
+        strcpy(KVStore.value[i],value);
+        KVStore.delFlag[i]=0;
+        KVStore.realSize++;
+        strcpy(res,"Put successful! Deleted entry replaced.");
+        return 2;
+    }
+  }
+  strcpy(KVStore.key[KVStore.size],key);
+  strcpy(KVStore.value[KVStore.size],value);
+  KVStore.size++;
+  KVStore.realSize++;
+  strcpy(res,"Put successful!");
+  return 0;
+}
+
+int get(char* key, char* res){
+  strcpy(res, "");
+  int i;
+  for (i=0; i<KVStore.size;i++) {
+    if(strcmp(KVStore.key[i],key)==0){
+      strcpy(res,KVStore.value[i]);
+      return 0;
+    }
+  }
+  strcpy(res,"Key not found!");
+  return 1;
+}
+
+int del(char* key, char* res){
+  strcpy(res, "");
+  int i;
+  for(i=0;i<KVStore.size;i++){
+    if(strcmp(KVStore.key[i],key)==0){
+      strcpy(res,KVStore.value[i]);
+      KVStore.delFlag[i]=1;
+      strcpy(KVStore.key[i],"");
+      strcpy(KVStore.value[i],"");
+      KVStore.realSize--;
+      return 0;
+    }
+  }
+  strcpy(res,"Key not found!");
+  return 1;
+}
+
+void list(char* res){
+  strcpy(res, "");
+  char buf[BUFSIZ];
+  snprintf(buf, sizeof(buf), "%d", KVStore.size);//int wird zum char array konvertiert
+  strcpy(res, buf);
+  if(KVStore.size==0){
+    printf("No element found!");
+    return;
+  }
+  int i;
+  for(i=0;i<KVStore.size;i++){
+    if(KVStore.delFlag[i]!=1){
+      printf("Index : %i - Key : %s ; Value : %s ;\n", i, KVStore.key[i], KVStore.value[i]);
+    }
+  }
+  return;
+}
