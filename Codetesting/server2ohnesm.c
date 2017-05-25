@@ -36,7 +36,7 @@ int main (void) {
     struct sockaddr_in address;
     const int y = 1;
     char* str[100];
-  const char s[2] = " ";
+  const char s[2] = "-";
   char* token;
     char key[BUFFER_SIZE];
     char value[BUFFER_SIZE];
@@ -74,14 +74,14 @@ int main (void) {
       if ((strlen(buffer)>0) && (buffer[strlen (buffer) - 1] == '\n'))
         buffer[strlen (buffer) - 1] = '\0';
       printf("%s\n", buffer);
-            //strtoken(buffer, " ", str, 3);
+            strtoken(buffer, " ", str, 3);
       //char* str, char* separator, char **token, int size
       //strcpy(str,buffer);
-      int i=0;
+      /*int i=0;
       token = strtok(str,s);
       while(token!=NULL)
         token = strtok(NULL, s);
-
+      */
       printf("%s\n", str[0]);
             printf("KEY:%s\n", str[1]);
       printf("KeyLength:%i\n", strlen(str[1]));
@@ -116,14 +116,14 @@ return EXIT_SUCCESS;
 }
 
 int strtoken(char *str, char *separator, char **token, int size) {
-/*
+
     int i=0;
     token[0] = strtok(str, separator);
     //while(token[i++] && i < size)
     while(i < size && token!=NULL){
       i++;
       token[i] = strtok(NULL, separator);
-    }*/
+    }
     return 0;
 }
 
