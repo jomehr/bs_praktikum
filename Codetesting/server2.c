@@ -10,7 +10,10 @@
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#define MAXMYMEM 30
+#include <threads.h>
+
+#define NUM_OF_CHILDS 2
+#define SEGSIZE sizeof(int)
 
 #define BUF 1024
 #define BUFFER_SIZE 1024
@@ -34,36 +37,41 @@ struct Data{
 struct Data KVStore;
 
 int main (void) {
+    /*sharedmemoryid*/
+    int smid, shar_mem;
     int create_socket, new_socket;
     socklen_t addrlen;
-    char* buffer = malloc (BUF);
     ssize_t size;
     struct sockaddr_in address;
     const int y = 1;
+    const char s[2] = "-";
+    char* buffer = malloc (BUF);
     char* str[100];
-	const char s[2] = "-";
-	char* token;
+	  char* token;
     char key[BUFFER_SIZE];
     char value[BUFFER_SIZE];
     char res[BUFFER_SIZE];
-	KVStore.size=0;
-	KVStore.realSize=0;
+	  KVStore.size=0;
+	  KVStore.realSize=0;
 
-	int shID;
-	int i;
-
-	/* Shared Memory erzeugen */
-    shID = shmget(2404, MAXSM, IPC_CREAT | 0666);
-	if (shID >= 0) {
-        /* nun holen wir den Speicher */
-        myPtr = shmat(shID, 0, 0);
-		if (myPtr==(char *)-1) {
-            perror("shmat");
-        } else {
-			//Hier Anwendung reinkopieren
-		}
-	} else { /* shmget lief schief */
-        perror("shmget");
+    /*SharedMemory erstellen*/
+    smid = shmget(IPC_PRIVATE, SEGSIZE, IPC_CREAT|0600);
+    shar_mem= (int*)shmat(smid, 0, 0);
+    *shar_mem= 0;
+    /*Kindprozesse erzeugen mit fork()*/
+    for(i = 0; i < NUM_OF_CHILDS; i++){
+      pid[i] = fork();
+      if(pid[i] == -1){
+        printf("Kindprozess konnte nicht erzeugt werden!\n");
+        exit(1);
+      }
+    }
+    for(i = 0; i < NUM_OF_CHILDS; i++){
+      if(pid[i] == 0){
+         /* Kindprozess-spezifischer Code WICHTIG LETZTER SCHRITT FUER SHARED MEMORY*/
+        }
+        exit(0);
+      }
     }
 
     if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0)
@@ -131,8 +139,13 @@ int main (void) {
     } while (strcmp (buffer, "quit\n") != 0);
 }
 
-close (new_socket);
-close (create_socket);
+/* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
+for(i = 0; i < NUM_OF_CHILDS; i++){
+  waitpid(pid[i], NULL, 0);
+}
+/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
+shmdt(shar_mem);
+shmctl(smid, IPC_RMID, 0);
 
 return EXIT_SUCCESS;
 }

@@ -1,4 +1,4 @@
-#define MAXCOUNT 1000000
+
 #define NUM_OF_CHILDS 2
 #define SEGSIZE sizeof(int)
 
@@ -15,10 +15,8 @@ void main(){
     }
   }
   for(i = 0; i < NUM_OF_CHILDS; i++){
-    if(pid[i] == 0){ /* Kindprozess-spezifischer Code */
-      while(*shar_mem < MAXCOUNT){
-        *shar_mem+= 1;;
-        printf("Dies ist ein Text.")
+    if(pid[i] == 0){
+       /* Kindprozess-spezifischer Code */
       }
       exit(0);
     }
