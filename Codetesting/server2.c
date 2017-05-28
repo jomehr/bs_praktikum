@@ -11,6 +11,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <threads.h>
+#include <sys/wait.h>
 
 #define NUM_OF_CHILDS 2
 #define SEGSIZE sizeof(int)
@@ -37,8 +38,10 @@ struct Data{
 struct Data KVStore;
 
 int main (void) {
-    /*sharedmemoryid*/
-    int smid, shar_mem;
+    /*sharedmemory-spezifisch*/
+    int i, smid, *shar_mem;
+    int pid[NUM_OF_CHILDS];
+
     int create_socket, new_socket;
     socklen_t addrlen;
     ssize_t size;
@@ -59,7 +62,7 @@ int main (void) {
     shar_mem= (int*)shmat(smid, 0, 0);
     *shar_mem= 0;
     /*Kindprozesse erzeugen mit fork()*/
-    for(i = 0; i < NUM_OF_CHILDS; i++){
+    for(i = 0; i <= NUM_OF_CHILDS; i++){
       pid[i] = fork();
       if(pid[i] == -1){
         printf("Kindprozess konnte nicht erzeugt werden!\n");
