@@ -8,10 +8,10 @@
 #include <string.h>
 #include <strings.h>
 
+/*sharedmemory-spezifisch*/
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
-
 #define NUM_OF_CHILDS 5
 #define SEGSIZE 1024
 
@@ -23,7 +23,6 @@ int strtoken(char *str, char *separator, char **token, int size);
 int put(char* key, char* value, char* res);
 int get(char* key, char* res);
 int del(char* key, char* res);
-/*void list(char* res);*/
 
 struct Data{
   char key[BUFFER_SIZE][KV_STRING];
@@ -70,7 +69,7 @@ int main (void) {
     if (bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0) {
         printf( "Der Port ist nicht frei!\n");
     }
-    listen (create_socket, 2);
+    listen (create_socket, 5);
     addrlen = sizeof (struct sockaddr_in);
 	
 	/*Kindprozesse erzeugen*/
@@ -84,6 +83,7 @@ int main (void) {
 	
     while (1) {
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );			
+		/*Sharedmemory-spezifisch*/
 		for(i = 0; i < NUM_OF_CHILDS; i++){
 			if(pid[i] == 0){
 				if (new_socket > 0){
