@@ -10,11 +10,10 @@
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include <threads.h>
 #include <sys/wait.h>
 
-#define NUM_OF_CHILDS 2
-#define SEGSIZE sizeof(int)
+#define NUM_OF_CHILDS 5
+#define SEGSIZE 1024
 
 #define BUF 1024
 #define BUFFER_SIZE 1024
@@ -29,12 +28,10 @@ int del(char* key, char* res);
 struct Data{
   char key[BUFFER_SIZE][KV_STRING];
   char value[BUFFER_SIZE][KV_STRING];
-  int delFlag[BUFFER_SIZE];           //1 = geloescht
-  int size;                           //letzter Index vom Array
-  int realSize;                       //Menge der Eintraege im Array
+  int delFlag[BUFFER_SIZE];           
+  int size;                           
+  int realSize;                       
 };
-//Hier wird nur die Variable KVStore um Funktionalitaet erweitert
-//und nicht das struct selbst!
 struct Data KVStore;
 
 int main (void) {
@@ -50,114 +47,95 @@ int main (void) {
     const char s[2] = "-";
     char* buffer = malloc (BUF);
     char* str[100];
-	  char* token;
+	char* token;
     char key[BUFFER_SIZE];
     char value[BUFFER_SIZE];
     char res[BUFFER_SIZE];
-	  KVStore.size=0;
-	  KVStore.realSize=0;
-
+	KVStore.size=0;
+    KVStore.realSize=0;
+	
     /*SharedMemory erstellen*/
     smid = shmget(IPC_PRIVATE, SEGSIZE, IPC_CREAT|0600);
     shar_mem= (int*)shmat(smid, 0, 0);
     *shar_mem= 0;
-    /*Kindprozesse erzeugen mit fork()*/
-    for(i = 0; i <= NUM_OF_CHILDS; i++){
-      pid[i] = fork();
-      if(pid[i] == -1){
-        printf("Kindprozess konnte nicht erzeugt werden!\n");
-        exit(1);
-      }
-    }
-    for(i = 0; i < NUM_OF_CHILDS; i++){
-      if(pid[i] == 0){
-         /* Kindprozess-spezifischer Code WICHTIG LETZTER SCHRITT FUER SHARED MEMORY*/
-        }
-        exit(0);
-      }
-    }
-
-    if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0)
-        printf ("Socket wurde angelegt\n");
-
-    setsockopt( create_socket, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
+	
+    
+    if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
+		printf ("Socket wurde angelegt\n");
+	}
+	setsockopt( create_socket, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons (1500);
-
     if (bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0) {
-        printf( "Der Port ist nicht frei – belegt!\n");
+        printf( "Der Port ist nicht frei!\n");
     }
-
-    listen (create_socket, 5);
+    listen (create_socket, 2);
     addrlen = sizeof (struct sockaddr_in);
-
+	
+	/*Kindprozesse erzeugen*/
+	for(i = 0; i < NUM_OF_CHILDS; i++) {
+		pid[i] = fork();
+		if (pid[i] == -1) {
+			printf("Kindprozess konnte nicht erzeugt werden!\n");
+			exit(1);
+		}
+	}
+	
     while (1) {
-        new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
+		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );			
+		for(i = 0; i < NUM_OF_CHILDS; i++){
+			if(pid[i] == 0){
+				if (new_socket > 0){
+					printf ("Ein Client (%s) ist verbunden!\n", inet_ntoa (address.sin_addr));
+				}
+				do{
+					bzero(buffer,BUF);
+					size = recv (new_socket, buffer, BUF, 0);
+					if ((strlen(buffer)>0) && (buffer[strlen (buffer) - 1] == '\n'))
+						buffer[strlen (buffer) - 1] = '\0';
+						printf("%s\n", buffer);
+						strtoken(buffer, " ", str, 3);
+						printf("%s\n", str[0]);
+						printf("KEY:%s\n", str[1]);
+						printf("KeyLength:%i\n", strlen(str[1]));
+						printf("VALUE:%s\n", str[2]);
+						printf("ValueLength:%i\n", strlen(str[2]));
+						if( strcmp(str[0], "put")==0){
+							printf("Jetzt wird die put Funktion ausgeführt\n");
+							put(str[1], str[2], res);
+							printf("Ergebnis: %s\n", res);
+						}
+						if( strcmp(str[0], "get")==0){
+							printf("Jetzt wird die get Funktion ausgeführt\n");
+							get(str[1], res);
+							printf("Ergebnis: %s\n", res);
+						}
+						if( strcmp(str[0], "del")==0){
+							printf("Jetzt wird die del Funktion ausgeführt\n");
+							del(str[1], res);
+							printf("Ergebnis: %s\n", res);
+						}
+				} while (strcmp (buffer, "quit\n") != 0);
+			exit(0);
+			}
+		}
+    }
+    /* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
+    for(i = 0; i < NUM_OF_CHILDS; i++){
+      waitpid(pid[i], NULL, 0);
+    }
+    /* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
+    shmdt(shar_mem);
+    shmctl(smid, IPC_RMID, 0);
 
-        if (new_socket > 0)
-            printf ("Ein Client (%s) ist verbunden ...\n", inet_ntoa (address.sin_addr));
-
-        do {
-
-            bzero(buffer,BUF);
-
-            size = recv (new_socket, buffer, BUF, 0);
-      //removes trailing new line from buffer
-      if ((strlen(buffer)>0) && (buffer[strlen (buffer) - 1] == '\n'))
-        buffer[strlen (buffer) - 1] = '\0';
-      printf("%s\n", buffer);
-            strtoken(buffer, " ", str, 3);
-      //char* str, char* separator, char **token, int size
-      //strcpy(str,buffer);
-      /*int i=0;
-      token = strtok(str,s);
-      while(token!=NULL)
-        token = strtok(NULL, s);
-      */
-      printf("%s\n", str[0]);
-            printf("KEY:%s\n", str[1]);
-      printf("KeyLength:%i\n", strlen(str[1]));
-            printf("VALUE:%s\n", str[2]);
-      printf("ValueLength:%i\n", strlen(str[2]));
-
-            if( strcmp(str[0], "put")==0){
-                printf("Jetzt wird die put Funktion ausgeführt\n");
-                put(str[1], str[2], res);
-                printf("Ergebnis: %s\n", res);
-            }
-
-            if( strcmp(str[0], "get")==0){
-                printf("Jetzt wird die get Funktion ausgeführt\n");
-                get(str[1], res);
-                printf("Ergebnis: %s\n", res);
-            }
-
-                if( strcmp(str[0], "del")==0){
-                    printf("Jetzt wird die del Funktion ausgeführt\n");
-                    del(str[1], res);
-                    printf("Ergebnis: %s\n", res);
-                }
-
-    } while (strcmp (buffer, "quit\n") != 0);
-}
-
-/* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
-for(i = 0; i < NUM_OF_CHILDS; i++){
-  waitpid(pid[i], NULL, 0);
-}
-/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
-shmdt(shar_mem);
-shmctl(smid, IPC_RMID, 0);
-
-return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 int strtoken(char *str, char *separator, char **token, int size) {
 
     int i=0;
     token[0] = strtok(str, separator);
-    //while(token[i++] && i < size)
     while(i < size && token!=NULL){
       i++;
       token[i] = strtok(NULL, separator);
