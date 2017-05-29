@@ -38,8 +38,8 @@ struct Data{
 struct Data KVStore;
 
 int main (void) {
-	
-	
+
+
 	int create_socket, new_socket;
 	socklen_t addrlen;
 	char* buffer = malloc (BUF);
@@ -55,7 +55,7 @@ int main (void) {
 	char res[BUF];
 	KVStore.size=0;
 	KVStore.realSize=0;
-	
+
 	/*sharedmemory-spezifisch*/
     int i, shmid,semid, *shar_mem;
     int pid[NUM_OF_CHILDS];
@@ -69,23 +69,23 @@ int main (void) {
 		printf ("Fehler bei key %d, mit der Größe %d\n",
         IPC_PRIVATE, PROCESSMEM);
 		DeleteShmid = shmid;
-	
+
 	/* Shared-Memory-Segment anbinden */
 	shmdata = shmat (shmid, NULL, 0);
 	if (shmdata == (void *) -1)
 		printf ("Fehler bei shmat(): shmid %d\n", shmid);
-	
+
 	/* Kennung am Anfang des Segments schreiben */
 	*(int *) shmdata = semid;
 	buffer = shmdata + sizeof (int);
 	printf ("Server läuft mit Shared-Memory-ID %d\n", shmid);
-	
+
 	/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
     shmdt(shar_mem);
     shmctl(shmid, IPC_RMID, 0);
-	
+
 	/*
-	
+
 	Kindprozesse erzeugen
 	for(i = 0; i < NUM_OF_CHILDS; i++) {
 		pid[i] = fork();
@@ -94,7 +94,7 @@ int main (void) {
 			exit(1);
 		}
 	}
-	
+
 	for(i = 0; i < NUM_OF_CHILDS; i++){
 		if(pid[i] == 0){
 			if (new_socket > 0){
@@ -102,12 +102,12 @@ int main (void) {
 			}
 		}
 	}
-	Der Vaterprozess wartet, bis alle Kindprozessefertig sind. 
+	Der Vaterprozess wartet, bis alle Kindprozessefertig sind.
 		for(i = 0; i < NUM_OF_CHILDS; i++){
 			waitpid(pid[i], NULL, 0);
 		}
-	
-	
+
+
 	*/
 
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
@@ -117,15 +117,15 @@ int main (void) {
 	setsockopt( create_socket, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons (1500);
+	address.sin_port = htons (1501);
 
 	if(bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0){
 		printf( "The port is not free – busy!\n");
 	}
 
 	listen (create_socket, 5);
-	addrlen = sizeof (struct sockaddr_in);		
-	
+	addrlen = sizeof (struct sockaddr_in);
+
 
 	while(1){
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
@@ -160,7 +160,7 @@ int main (void) {
 						del(token[1], res);
 						//printf("Ergebnis: %s\n", res);
 						write(new_socket, res, RES);
-						} else { 
+						} else {
 							if( strcmp(token[0], "list")==0){
 							bzero(res, RES);
 							list(res);
@@ -173,17 +173,18 @@ int main (void) {
 							}
 						}
 					}
+					bzero(res, RES);
 		}while(strstr(buffer, "quit") == 0);
-		
+
 		/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
 		shmdt(shar_mem);
 		shmctl(shmid, IPC_RMID, 0);
-	
+
 		close (new_socket);
 		close (create_socket);
 		return EXIT_SUCCESS;
 	}
-	
+
 }
 
 
@@ -277,6 +278,10 @@ void list(char* res){
 	for(i=0;i<KVStore.size;i++){
 		if(KVStore.delFlag[i]!=1){
 			printf("Index:%i-Key:%s;Value:%s;\n", i, KVStore.key[i], KVStore.value[i]);
+			strcat(res,KVStore.key[i]);
+			strcat(res," | ");
+			strcat(res,KVStore.value[i]);
+			strcat(res,"\n");
 		}
 	}
 	return;
