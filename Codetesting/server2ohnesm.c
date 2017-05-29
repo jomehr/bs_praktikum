@@ -24,6 +24,7 @@ int put(char* key, char* value, char* res);
 int get(char* key, char* res);
 int del(char* key, char* res);
 void list(char* res);
+char buf[BUFSIZ];
 
 struct Data{
 	char key[BUF][KV_STRING];
@@ -59,7 +60,7 @@ int main (void) {
 
 	/*SharedMemory erstellen*/
     smid = shmget(IPC_PRIVATE, PROCESSMEM, IPC_CREAT|0600);
-    shar_mem= (int*)shmat(smid, 0, 0);
+    shar_mem= shmat(smid, 0, 0);
     *shar_mem= 0;
 
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
@@ -167,7 +168,7 @@ int main (void) {
           } else { if( strcmp(token[0], "list")==0){
             bzero(res, RES);
             list(res);
-            write(new_socket, "Size: ", 6);
+            //write(new_socket, "Size: ", 6);
             write(new_socket, res, RES);
           } else {
             printf("Die Eingabe war fehlerhaft\n");
@@ -176,6 +177,8 @@ int main (void) {
         }
       }
     }
+
+
 
 
 		}while(strstr(buffer, "quit") == 0);
@@ -188,7 +191,7 @@ int main (void) {
 		/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
 		shmdt(shar_mem);
 		shmctl(smid, IPC_RMID, 0);
-		exit(0);
+		//exit(0);
 		close (new_socket);
 		close (create_socket);
 		return EXIT_SUCCESS;
@@ -233,6 +236,8 @@ int put(char* key, char* value, char* res){
 
 int get(char* key, char* res){
 	strcpy(res, "");
+	strcat(res, buf);
+	strcat(res,"\n");
 	if(KVStore.size == 0){
 		strcpy(res,"Store is empty.\n");
 		return 1;
@@ -250,6 +255,8 @@ int get(char* key, char* res){
 
 int del(char* key, char* res){
 	strcpy(res, "");
+	strcat(res, buf);
+	strcat(res,"\n");
 	if(KVStore.size == 0){
 		strcpy(res,"Store is empty.\n");
 		return 1;
@@ -271,9 +278,8 @@ int del(char* key, char* res){
 
 void list(char* res){
 	strcpy(res, "");
-	char buf[BUFSIZ];
+	strcat(res, "Size: ");
 	//int converts to char array
-
 	snprintf(buf, sizeof(buf), "%d", KVStore.size);
 	strcat(res, buf);
   strcat(res,"\n");
@@ -285,6 +291,10 @@ void list(char* res){
 	for(i=0;i<KVStore.size;i++){
 		if(KVStore.delFlag[i]!=1){
 			printf("Index:%i-Key:%s;Value:%s;\n", i, KVStore.key[i], KVStore.value[i]);
+			strcat(res,KVStore.key[i]);
+			strcat(res," | ");
+			strcat(res,KVStore.value[i]);
+			strcat(res,"\n");
 		}
 	}
 	return;
