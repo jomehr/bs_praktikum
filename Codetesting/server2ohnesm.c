@@ -1,4 +1,4 @@
-#include <sys/types.h>
+﻿#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -11,6 +11,13 @@
 #define BUF 1024
 #define KV_STRING 50
 #define RES 1024
+
+/*sharedmemory-spezifisch*/
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+#define NUM_OF_CHILDS 5
+#define PROCESSMEM 1024
 
 int strtoken(char* str, char* separator, char** token, int size);
 int put(char* key, char* value, char* res);
@@ -30,6 +37,10 @@ struct Data{
 struct Data KVStore;
 
 int main (void) {
+	/*sharedmemory-spezifisch*/
+    int i, smid, *shar_mem;
+    int pid[NUM_OF_CHILDS];
+	
 	int create_socket, new_socket;
 	socklen_t addrlen;
 	char* buffer = malloc (BUF);
@@ -45,6 +56,11 @@ int main (void) {
 	char res[BUF];
 	KVStore.size=0;
 	KVStore.realSize=0;
+	
+	/*SharedMemory erstellen*/
+    smid = shmget(IPC_PRIVATE, PROCESSMEM, IPC_CREAT|0600);
+    shar_mem= (int*)shmat(smid, 0, 0);
+    *shar_mem= 0;
 
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
 		printf ("Socket created!\n");
@@ -64,10 +80,12 @@ int main (void) {
 
 	while(1){
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
-
-		if (new_socket > 0){
-			printf ("A client (%s) is connected ...\n", inet_ntoa (address.sin_addr));
-		}
+		/*Sharedmemory-spezifisch*/
+		for(i = 0; i < NUM_OF_CHILDS; i++){
+			if(pid[i] == 0){
+				if (new_socket > 0){
+					printf ("Ein Client (%s) ist verbunden!\n", inet_ntoa (address.sin_addr));
+				}
 
     write(new_socket, "Geben Sie die Funktion put / get / del mit den benötigten Parametern ein: \n", 80);
 
@@ -148,14 +166,24 @@ int main (void) {
         }
       }
     }
+	
 
 		}while(strstr(buffer, "quit") == 0);
-
-	close (new_socket);
-	close (create_socket);
-	return EXIT_SUCCESS;
-}
-}
+			}
+		}
+		/* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
+		for(i = 0; i < NUM_OF_CHILDS; i++){
+			waitpid(pid[i], NULL, 0);
+		}
+		/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
+		shmdt(shar_mem);
+		shmctl(smid, IPC_RMID, 0);
+		exit(0);
+		close (new_socket);
+		close (create_socket);
+		return EXIT_SUCCESS;
+	}
+}	
 
 
 int strtoken(char* str, char* separator, char** token, int size) {

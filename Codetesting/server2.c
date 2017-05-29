@@ -119,7 +119,7 @@ int main (void) {
 				} while (strcmp (buffer, "quit\n") != 0);
 			exit(0);
 			}
-		}
+		
     }
     /* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
     for(i = 0; i < NUM_OF_CHILDS; i++){
