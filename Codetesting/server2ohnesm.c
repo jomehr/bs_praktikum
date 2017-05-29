@@ -98,7 +98,8 @@ int main (void) {
 					printf ("Client (%s) is connected!\n", inet_ntoa (address.sin_addr));
 				}
 
-    write(new_socket, "Enter put / get / del with required parameters: \n", 80);
+		char enter[] = "Enter put / get / del with required parameters: \n";
+    write(new_socket, enter, strlen(enter));
 
 		do{
 			bzero(buffer,BUF);
@@ -124,17 +125,13 @@ int main (void) {
       } else { if (strcmp(token[0], "get")==0){
           printf("Executing get function\n");
           get(token[1], res);
-          //printf("Ergebnis: %s\n", res);
           write(new_socket, res, RES);
         } else { if( strcmp(token[0], "del")==0){
             printf("Executing del function\n");
             del(token[1], res);
-            //printf("Ergebnis: %s\n", res);
             write(new_socket, res, RES);
           } else { if( strcmp(token[0], "list")==0){
-            bzero(res, RES);
             list(res);
-            //write(new_socket, "Size: ", 6);
             write(new_socket, res, RES);
           } else {
             printf("Incorrect Entry\n");
@@ -143,9 +140,7 @@ int main (void) {
         }
       }
     }
-
-
-
+		bzero(res, RES);
 
 		}while(strstr(buffer, "quit") == 0);
 			}
