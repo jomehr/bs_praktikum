@@ -95,10 +95,10 @@ int main (void) {
 			if(pid[i] == 0){
 				if (new_socket > 0){
 					//pid[i] = fork();
-					printf ("Ein Client (%s) ist verbunden!\n", inet_ntoa (address.sin_addr));
+					printf ("Client (%s) is connected!\n", inet_ntoa (address.sin_addr));
 				}
 
-    write(new_socket, "Geben Sie die Funktion put / get / del mit den benötigten Parametern ein: \n", 80);
+    write(new_socket, "Enter put / get / del with required parameters: \n", 80);
 
 		do{
 			bzero(buffer,BUF);
@@ -116,52 +116,18 @@ int main (void) {
 			}
 
 			strtoken(buffer, separator, token, 3);
-			/*
-			printf("FUNC: %s\n", token[0]);
-			printf("FunctionLength: %i\n", strlen(token[0]));
 
-			printf("KEY: %s\n", token[1]);
-			printf("KeyLength: %i\n", strlen(token[1]));
-
-			printf("VALUE: %s\n", token[2]);
-			printf("ValueLength: %i\n", strlen(token[2]));
-			*/
-			// if( strcmp(token[0], "put")==0){
-			// 	printf("Put function selected\n");
-			// 	put(token[1], token[2], res);
-      //   write(new_socket, res, RES);
-			// 	printf("Result: %s\n", res);
-			// }
-      //
-			// if( strcmp(token[0], "get")==0){
-			// 	printf("Get function selected\n");
-			// 	get(token[1], res);
-      //
-			// 	printf("Result: %s\n", res);
-			// }
-      //
-			// if( strcmp(token[0], "del")==0){
-			// 	printf("Del function selected\n");
-			// 	del(token[1], res);
-			// 	printf("Result: %s\n", res);
-			// }
-      //
-			// if( strcmp(token[0], "list")==0){
-			// 	printf("List function selected\n");
-			// 	list(res);
-			// 	printf("Result: %s\n", res);
-			//}
       if( strcmp(token[0], "put")==0){
-        printf("Jetzt wird die put Funktion ausgeführt\n");
+        printf("Executing put function\n");
         put(token[1], token[2], res);
         write(new_socket, res, RES);
       } else { if (strcmp(token[0], "get")==0){
-          printf("Jetzt wird die get Funktion ausgeführt\n");
+          printf("Executing get function\n");
           get(token[1], res);
           //printf("Ergebnis: %s\n", res);
           write(new_socket, res, RES);
         } else { if( strcmp(token[0], "del")==0){
-            printf("Jetzt wird die del Funktion ausgeführt\n");
+            printf("Executing del function\n");
             del(token[1], res);
             //printf("Ergebnis: %s\n", res);
             write(new_socket, res, RES);
@@ -171,8 +137,8 @@ int main (void) {
             //write(new_socket, "Size: ", 6);
             write(new_socket, res, RES);
           } else {
-            printf("Die Eingabe war fehlerhaft\n");
-            write(new_socket, "Fehlerhafte Eingabe\n", 20);
+            printf("Incorrect Entry\n");
+            write(new_socket, "Incorrect entry\n", 20);
           }
         }
       }
@@ -277,16 +243,16 @@ int del(char* key, char* res){
 }
 
 void list(char* res){
+	if(KVStore.size==0){
+		printf("Store is empty.\n");
+		return;
+	}
 	strcpy(res, "");
 	strcat(res, "Size: ");
 	//int converts to char array
 	snprintf(buf, sizeof(buf), "%d", KVStore.size);
 	strcat(res, buf);
   strcat(res,"\n");
-	if(KVStore.size==0){
-		printf("Store is empty.\n");
-		return;
-	}
 	int i;
 	for(i=0;i<KVStore.size;i++){
 		if(KVStore.delFlag[i]!=1){
