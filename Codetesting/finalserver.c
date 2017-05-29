@@ -14,6 +14,7 @@
 
 /*sharedmemory-spezifisch*/
 #include <sys/ipc.h>
+#include <sys/types.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
 #define NUM_OF_CHILDS 5
@@ -37,10 +38,8 @@ struct Data{
 struct Data KVStore;
 
 int main (void) {
-	/*sharedmemory-spezifisch*/
-    int i, smid, *shar_mem;
-    int pid[NUM_OF_CHILDS];
-
+	
+	
 	int create_socket, new_socket;
 	socklen_t addrlen;
 	char* buffer = malloc (BUF);
@@ -56,11 +55,60 @@ int main (void) {
 	char res[BUF];
 	KVStore.size=0;
 	KVStore.realSize=0;
+	
+	/*sharedmemory-spezifisch*/
+    int i, shmid,semid, *shar_mem;
+    int pid[NUM_OF_CHILDS];
+	static int DeleteShmid = 0;
+	void *shmdata;
 
 	/*SharedMemory erstellen*/
-    smid = shmget(IPC_PRIVATE, PROCESSMEM, IPC_CREAT|0600);
-    shar_mem= (int*)shmat(smid, 0, 0);
-    *shar_mem= 0;
+    shmid = shmget (IPC_PRIVATE, PROCESSMEM,
+             IPC_CREAT | SHM_R | SHM_W);
+	if (shmid == -1)
+		printf ("Fehler bei key %d, mit der Größe %d\n",
+        IPC_PRIVATE, PROCESSMEM);
+		DeleteShmid = shmid;
+	
+	/* Shared-Memory-Segment anbinden */
+	shmdata = shmat (shmid, NULL, 0);
+	if (shmdata == (void *) -1)
+		printf ("Fehler bei shmat(): shmid %d\n", shmid);
+	
+	/* Kennung am Anfang des Segments schreiben */
+	*(int *) shmdata = semid;
+	buffer = shmdata + sizeof (int);
+	printf ("Server läuft mit Shared-Memory-ID %d\n", shmid);
+	
+	/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
+    shmdt(shar_mem);
+    shmctl(shmid, IPC_RMID, 0);
+	
+	/*
+	
+	Kindprozesse erzeugen
+	for(i = 0; i < NUM_OF_CHILDS; i++) {
+		pid[i] = fork();
+		if (pid[i] == -1) {
+			printf("Kindprozess konnte nicht erzeugt werden!\n");
+			exit(1);
+		}
+	}
+	
+	for(i = 0; i < NUM_OF_CHILDS; i++){
+		if(pid[i] == 0){
+			if (new_socket > 0){
+				Childaktion
+			}
+		}
+	}
+	Der Vaterprozess wartet, bis alle Kindprozessefertig sind. 
+		for(i = 0; i < NUM_OF_CHILDS; i++){
+			waitpid(pid[i], NULL, 0);
+		}
+	
+	
+	*/
 
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
 		printf ("Socket created!\n");
@@ -76,124 +124,68 @@ int main (void) {
 	}
 
 	listen (create_socket, 5);
-	addrlen = sizeof (struct sockaddr_in);
-
-	/*Kindprozesse erzeugen*/
-	for(i = 0; i < NUM_OF_CHILDS; i++) {
-		pid[i] = fork();
-		if (pid[i] == -1) {
-			printf("Kindprozess konnte nicht erzeugt werden!\n");
-			exit(1);
-		}
-	}
+	addrlen = sizeof (struct sockaddr_in);		
+	
 
 	while(1){
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
-		/*Sharedmemory-spezifisch*/
-		for(i = 0; i < NUM_OF_CHILDS; i++){
-			if(pid[i] == 0){
-				if (new_socket > 0){
-					//pid[i] = fork();
-					printf ("Ein Client (%s) ist verbunden!\n", inet_ntoa (address.sin_addr));
-				}
 
-    write(new_socket, "Geben Sie die Funktion put / get / del mit den benötigten Parametern ein: \n", 80);
+		printf ("Ein Client (%s) ist verbunden!\n", inet_ntoa (address.sin_addr));
+
+		write(new_socket, "Geben Sie die Funktion put / get / del mit den benötigten Parametern ein: \n", 80);
 
 		do{
 			bzero(buffer,BUF);
 			recv (new_socket, buffer, BUF, 0);
-
-			//removes trailing new line from buffer
 			if ((strlen(buffer)>0) && (buffer[strlen (buffer) - 1] == '\n')){
 				buffer[strlen (buffer) - 1] = '\0';
 			}
 			printf("%s\n", buffer);
-			//adds a trailing whitespace to the buffer
 			if ((buffer[strlen (buffer) - 2] != ' ')){
-				//printf("No trailing whitespace found!\n");
 				buffer[strlen (buffer) - 1] = ' ';
 			}
-
 			strtoken(buffer, separator, token, 3);
-			/*
-			printf("FUNC: %s\n", token[0]);
-			printf("FunctionLength: %i\n", strlen(token[0]));
-
-			printf("KEY: %s\n", token[1]);
-			printf("KeyLength: %i\n", strlen(token[1]));
-
-			printf("VALUE: %s\n", token[2]);
-			printf("ValueLength: %i\n", strlen(token[2]));
-			*/
-			// if( strcmp(token[0], "put")==0){
-			// 	printf("Put function selected\n");
-			// 	put(token[1], token[2], res);
-      //   write(new_socket, res, RES);
-			// 	printf("Result: %s\n", res);
-			// }
-      //
-			// if( strcmp(token[0], "get")==0){
-			// 	printf("Get function selected\n");
-			// 	get(token[1], res);
-      //
-			// 	printf("Result: %s\n", res);
-			// }
-      //
-			// if( strcmp(token[0], "del")==0){
-			// 	printf("Del function selected\n");
-			// 	del(token[1], res);
-			// 	printf("Result: %s\n", res);
-			// }
-      //
-			// if( strcmp(token[0], "list")==0){
-			// 	printf("List function selected\n");
-			// 	list(res);
-			// 	printf("Result: %s\n", res);
-			//}
-      if( strcmp(token[0], "put")==0){
-        printf("Jetzt wird die put Funktion ausgeführt\n");
-        put(token[1], token[2], res);
-        write(new_socket, res, RES);
-      } else { if (strcmp(token[0], "get")==0){
-          printf("Jetzt wird die get Funktion ausgeführt\n");
-          get(token[1], res);
-          //printf("Ergebnis: %s\n", res);
-          write(new_socket, res, RES);
-        } else { if( strcmp(token[0], "del")==0){
-            printf("Jetzt wird die del Funktion ausgeführt\n");
-            del(token[1], res);
-            //printf("Ergebnis: %s\n", res);
-            write(new_socket, res, RES);
-          } else { if( strcmp(token[0], "list")==0){
-            bzero(res, RES);
-            list(res);
-            write(new_socket, "Size: ", 6);
-            write(new_socket, res, RES);
-          } else {
-            printf("Die Eingabe war fehlerhaft\n");
-            write(new_socket, "Fehlerhafte Eingabe\n", 20);
-          }
-        }
-      }
-    }
-
-
+			if( strcmp(token[0], "put")==0){
+				printf("Jetzt wird die put Funktion ausgeführt\n");
+				put(token[1], token[2], res);
+				write(new_socket, res, RES);
+				}else{
+					if (strcmp(token[0], "get")==0){
+					printf("Jetzt wird die get Funktion ausgeführt\n");
+					get(token[1], res);
+					write(new_socket, res, RES);
+					}else{
+						if( strcmp(token[0], "del")==0){
+						printf("Jetzt wird die del Funktion ausgeführt\n");
+						del(token[1], res);
+						//printf("Ergebnis: %s\n", res);
+						write(new_socket, res, RES);
+						} else { 
+							if( strcmp(token[0], "list")==0){
+							bzero(res, RES);
+							list(res);
+							write(new_socket, "Size: ", 6);
+							write(new_socket, res, RES);
+								}else{
+								printf("Die Eingabe war fehlerhaft\n");
+								write(new_socket, "Fehlerhafte Eingabe\n", 20);
+								}
+							}
+						}
+					}
 		}while(strstr(buffer, "quit") == 0);
-			}
-		}
-		/* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
-		for(i = 0; i < NUM_OF_CHILDS; i++){
-			waitpid(pid[i], NULL, 0);
-		}
+		
 		/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
 		shmdt(shar_mem);
-		shmctl(smid, IPC_RMID, 0);
-		exit(0);
+		shmctl(shmid, IPC_RMID, 0);
+	
 		close (new_socket);
 		close (create_socket);
 		return EXIT_SUCCESS;
 	}
+	
 }
+
 
 
 int strtoken(char* str, char* separator, char** token, int size) {
