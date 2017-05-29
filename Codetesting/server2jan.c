@@ -171,7 +171,7 @@ void list(char* res){
   snprintf(buf, sizeof(buf), "%d", KVStore.size);//int wird zum char array konvertiert
   strcpy(res, buf);
   if(KVStore.size==0){
-    printf("No element found!");
+    printf("No element found!\n");
     return;
   }
   int i;

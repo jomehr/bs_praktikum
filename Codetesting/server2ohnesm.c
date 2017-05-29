@@ -10,6 +10,7 @@
 
 #define BUF 1024
 #define KV_STRING 50
+#define RES 1024
 
 int strtoken(char* str, char* separator, char** token, int size);
 int put(char* key, char* value, char* res);
@@ -36,7 +37,7 @@ int main (void) {
 	struct sockaddr_in address;
 	const int y = 1;
 	//variables for the key-value store
-	char* str[100];
+	//char* str[100];
 	char* token[100];
 	char* separator = " ";
 	char key[BUF];
@@ -48,7 +49,7 @@ int main (void) {
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
 		printf ("Socket created!\n");
 	}
-	
+
 	setsockopt( create_socket, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
@@ -68,9 +69,11 @@ int main (void) {
 			printf ("A client (%s) is connected ...\n", inet_ntoa (address.sin_addr));
 		}
 
+    write(new_socket, "Geben Sie die Funktion put / get / del mit den benötigten Parametern ein: \n", 80);
+
 		do{
 			bzero(buffer,BUF);
-			size = recv (new_socket, buffer, BUF, 0);
+			recv (new_socket, buffer, BUF, 0);
 
 			//removes trailing new line from buffer
 			if ((strlen(buffer)>0) && (buffer[strlen (buffer) - 1] == '\n')){
@@ -94,38 +97,66 @@ int main (void) {
 			printf("VALUE: %s\n", token[2]);
 			printf("ValueLength: %i\n", strlen(token[2]));
 			*/
-			if( strcmp(token[0], "put")==0){
-				printf("Put function selected\n");
-				put(token[1], token[2], res);
-				printf("Result: %s\n", res);
-			}
+			// if( strcmp(token[0], "put")==0){
+			// 	printf("Put function selected\n");
+			// 	put(token[1], token[2], res);
+      //   write(new_socket, res, RES);
+			// 	printf("Result: %s\n", res);
+			// }
+      //
+			// if( strcmp(token[0], "get")==0){
+			// 	printf("Get function selected\n");
+			// 	get(token[1], res);
+      //
+			// 	printf("Result: %s\n", res);
+			// }
+      //
+			// if( strcmp(token[0], "del")==0){
+			// 	printf("Del function selected\n");
+			// 	del(token[1], res);
+			// 	printf("Result: %s\n", res);
+			// }
+      //
+			// if( strcmp(token[0], "list")==0){
+			// 	printf("List function selected\n");
+			// 	list(res);
+			// 	printf("Result: %s\n", res);
+			//}
+      if( strcmp(token[0], "put")==0){
+        printf("Jetzt wird die put Funktion ausgeführt\n");
+        put(token[1], token[2], res);
+        write(new_socket, res, RES);
+      } else { if (strcmp(token[0], "get")==0){
+          printf("Jetzt wird die get Funktion ausgeführt\n");
+          get(token[1], res);
+          //printf("Ergebnis: %s\n", res);
+          write(new_socket, res, RES);
+        } else { if( strcmp(token[0], "del")==0){
+            printf("Jetzt wird die del Funktion ausgeführt\n");
+            del(token[1], res);
+            //printf("Ergebnis: %s\n", res);
+            write(new_socket, res, RES);
+          } else { if( strcmp(token[0], "list")==0){
+            bzero(res, RES);
+            list(res);
+            write(new_socket, "Size: ", 6);
+            write(new_socket, res, RES);
+          } else {
+            printf("Die Eingabe war fehlerhaft\n");
+            write(new_socket, "Fehlerhafte Eingabe\n", 20);
+          }
+        }
+      }
+    }
 
-			if( strcmp(token[0], "get")==0){
-				printf("Get function selected\n");
-				get(token[1], res);
-				printf("Result: %s\n", res);
-			}
-
-			if( strcmp(token[0], "del")==0){
-				printf("Del function selected\n");
-				del(token[1], res);
-				printf("Result: %s\n", res);
-			}
-
-			if( strcmp(token[0], "list")==0){
-				printf("List function selected\n");
-				list(res);
-				printf("Result: %s\n", res);
-			}
-			
 		}while(strstr(buffer, "quit") == 0);
 
 	close (new_socket);
 	close (create_socket);
 	return EXIT_SUCCESS;
 }
-
 }
+
 
 int strtoken(char* str, char* separator, char** token, int size) {
 	int i=0;
@@ -140,7 +171,7 @@ int put(char* key, char* value, char* res){
 	for(i=0;i<KVStore.size;i++){
 		if(strcmp(KVStore.key[i],key)==0){
 			strcpy(KVStore.value[i],value);
-			strcpy(res,"Put successful! Existing entry replaced.");
+			strcpy(res,"Put successful! Existing entry replaced.\n");
 			return 1;
 		}
 	}
@@ -150,7 +181,7 @@ int put(char* key, char* value, char* res){
 			strcpy(KVStore.value[i],value);
 			KVStore.delFlag[i]=0;
 			KVStore.realSize++;
-			strcpy(res,"Put successful! Deleted entry replaced.");
+			strcpy(res,"Put successful! Deleted entry replaced.\n");
 			return 2;
 		}
 	}
@@ -158,14 +189,14 @@ int put(char* key, char* value, char* res){
 	strcpy(KVStore.value[KVStore.size],value);
 	KVStore.size++;
 	KVStore.realSize++;
-	strcpy(res,"Put successful!");
+	strcpy(res,"Put successful!\n");
 	return 0;
 }
 
 int get(char* key, char* res){
 	strcpy(res, "");
 	if(KVStore.size == 0){
-		strcpy(res,"Store is empty.");
+		strcpy(res,"Store is empty.\n");
 		return 1;
 	}
 	int i;
@@ -175,14 +206,14 @@ int get(char* key, char* res){
 			return 0;
 		}
 	}
-	strcpy(res,"Key not found!");
+	strcpy(res,"Key not found!\n");
 	return 1;
 }
 
 int del(char* key, char* res){
 	strcpy(res, "");
 	if(KVStore.size == 0){
-		strcpy(res,"Store is empty.");
+		strcpy(res,"Store is empty.\n");
 		return 1;
 	}
 	int i;
@@ -196,7 +227,7 @@ int del(char* key, char* res){
 			return 0;
 		}
 	}
-	strcpy(res,"Key not found!");
+	strcpy(res,"Key not found!\n");
 	return 1;
 }
 
@@ -204,10 +235,12 @@ void list(char* res){
 	strcpy(res, "");
 	char buf[BUFSIZ];
 	//int converts to char array
+
 	snprintf(buf, sizeof(buf), "%d", KVStore.size);
-	strcpy(res, buf);
+	strcat(res, buf);
+  strcat(res,"\n");
 	if(KVStore.size==0){
-		printf("Store is empty.");
+		printf("Store is empty.\n");
 		return;
 	}
 	int i;
