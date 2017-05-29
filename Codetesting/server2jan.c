@@ -1,6 +1,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,7 +12,7 @@
 #define BUF 1024
 #define BUFFER_SIZE 1024
 #define KV_STRING 50
-#define RES 1024
+#define RES 100
 
 int put(char* key, char* value, char* res);
 int get(char* key, char* res);
@@ -61,25 +63,23 @@ int main (void) {
 		if (new_socket > 0)
 			printf ("Ein Client (%s) ist verbunden ...\n", inet_ntoa (address.sin_addr));
 
-		do {
+    write(new_socket, "Geben Sie die Funktion put / get / del mit den benötigten Parametern ein: \n", 80);
 
-      write(new_socket, "Geben Sie die Funktion put / get / del mit den benötigten Parametern ein: \n", 82);
+    do {
+    bzero(buffer,BUF);
+    recv (new_socket, buffer, BUF, 0);
 
-      bzero(buffer,BUF);
-			recv (new_socket, buffer, BUF, 0);
+		strtoken(buffer, " ", str, 3);    //Clienteingabe wird in 3 Parameter geteilt
+		printf("%s %s %s\n", str[0], str[1], str[2]);
 
-			strtoken(buffer, " ", str, 3);
-			printf("%s %s %s\n", str[0], str[1], str[2]);
-
-			if( strcmp(str[0], "put")==0){
-				printf("Jetzt wird die put Funktion ausgeführt\n");
-				put(str[1], str[2], res);
-				//printf("Ergebnis: %s\n", res);
+  		if( strcmp(str[0], "put")==0){
+  			printf("Jetzt wird die put Funktion ausgeführt\n");
+  			put(str[1], str[2], res);
         write(new_socket, res, RES);
       } else { if (strcmp(str[0], "get")==0){
-  				printf("Jetzt wird die get Funktion ausgeführt\n");
-  				get(str[1], res);
-  				//printf("Ergebnis: %s\n", res);
+    			printf("Jetzt wird die get Funktion ausgeführt\n");
+    			get(str[1], res);
+    			//printf("Ergebnis: %s\n", res);
           write(new_socket, res, RES);
         } else { if( strcmp(str[0], "del")==0){
             printf("Jetzt wird die del Funktion ausgeführt\n");
@@ -92,13 +92,12 @@ int main (void) {
           }
         }
       }
-    }while (strcmp (buffer, "quit") != 0);
+    } while (strstr(*str, "quit!")==0);
+
+  close(new_socket);
+  close(create_socket);
+  return EXIT_SUCCESS;
   }
-
-close (new_socket);
-close (create_socket);
-
-return EXIT_SUCCESS;
 }
 
 int strtoken(char *str, char *separator, char **token, int size) {
