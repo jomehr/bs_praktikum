@@ -9,7 +9,7 @@
 #include <strings.h>
 
 #define BUF 1024
-#define KV_STRING 50
+#define KV_STRING 1024
 #define RES 1024
 
 /*sharedmemory-spezifisch*/
@@ -25,6 +25,7 @@ int put(char* key, char* value, char* res);
 int get(char* key, char* res);
 int del(char* key, char* res);
 void list(char* res);
+char buf[BUFSIZ];
 
 struct Data{
 	char key[BUF][KV_STRING];
@@ -33,9 +34,10 @@ struct Data{
 	int size;						//last array index
 	int realSize;					//no of entries in array
 };
+// smhget(IPC_PRIVATE, sizeof(Data), IPC_CREAT)
 //Only KVStore as a variable has the functions hereunder provided,
 //not the stuct itself!
-struct Data KVStore;
+struct Data *KVStore;
 
 int main (void) {
 
@@ -53,8 +55,8 @@ int main (void) {
 	char key[BUF];
 	char value[BUF];
 	char res[BUF];
-	KVStore.size=0;
-	KVStore.realSize=0;
+	KVStore->size=0;
+	KVStore->realSize=0;
 
 	/*sharedmemory-spezifisch*/
     int i, shmid,semid, *shar_mem;
@@ -63,15 +65,14 @@ int main (void) {
 	void *shmdata;
 
 	/*SharedMemory erstellen*/
-    shmid = shmget (IPC_PRIVATE, PROCESSMEM,
-             IPC_CREAT | SHM_R | SHM_W);
+    shmid = shmget (IPC_PRIVATE, sizeof(struct KVStore), IPC_CREAT | 0666);
 	if (shmid == -1)
 		printf ("Fehler bei key %d, mit der Größe %d\n",
         IPC_PRIVATE, PROCESSMEM);
 		DeleteShmid = shmid;
 
 	/* Shared-Memory-Segment anbinden */
-	shmdata = shmat (shmid, NULL, 0);
+	shmdata = (struct KVStore *)shmat (shmid, 0, 0);
 	if (shmdata == (void *) -1)
 		printf ("Fehler bei shmat(): shmid %d\n", shmid);
 
@@ -84,31 +85,6 @@ int main (void) {
     shmdt(shar_mem);
     shmctl(shmid, IPC_RMID, 0);
 
-	/*
-
-	Kindprozesse erzeugen
-	for(i = 0; i < NUM_OF_CHILDS; i++) {
-		pid[i] = fork();
-		if (pid[i] == -1) {
-			printf("Kindprozess konnte nicht erzeugt werden!\n");
-			exit(1);
-		}
-	}
-
-	for(i = 0; i < NUM_OF_CHILDS; i++){
-		if(pid[i] == 0){
-			if (new_socket > 0){
-				Childaktion
-			}
-		}
-	}
-	Der Vaterprozess wartet, bis alle Kindprozessefertig sind.
-		for(i = 0; i < NUM_OF_CHILDS; i++){
-			waitpid(pid[i], NULL, 0);
-		}
-
-
-	*/
 
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
 		printf ("Socket created!\n");
@@ -117,7 +93,7 @@ int main (void) {
 	setsockopt( create_socket, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons (1501);
+	address.sin_port = htons (15000);
 
 	if(bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0){
 		printf( "The port is not free – busy!\n");
@@ -126,9 +102,24 @@ int main (void) {
 	listen (create_socket, 5);
 	addrlen = sizeof (struct sockaddr_in);
 
+	/*Kindprozesse erzeugen*/
+	for(i = 0; i < NUM_OF_CHILDS; i++) {
+		pid[i] = fork();
+		if (pid[i] == -1) {
+			printf("Kindprozess konnte nicht erzeugt werden!\n");
+			exit(1);
+		}
+	}
 
 	while(1){
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
+
+		for(i = 0; i < NUM_OF_CHILDS; i++){
+			if(pid[i] == 0){
+				if (new_socket > 0){
+					//pid[i] = fork();
+					printf ("Client (%s) is connected!\n", inet_ntoa (address.sin_addr));
+				}
 
 		printf ("Ein Client (%s) ist verbunden!\n", inet_ntoa (address.sin_addr));
 
@@ -154,12 +145,13 @@ int main (void) {
 					printf("Jetzt wird die get Funktion ausgeführt\n");
 					get(token[1], res);
 					write(new_socket, res, RES);
+					write(new_socket, "\n", 2);
 					}else{
 						if( strcmp(token[0], "del")==0){
 						printf("Jetzt wird die del Funktion ausgeführt\n");
 						del(token[1], res);
-						//printf("Ergebnis: %s\n", res);
 						write(new_socket, res, RES);
+						write(new_socket, "\n", 2);
 						} else {
 							if( strcmp(token[0], "list")==0){
 							bzero(res, RES);
@@ -175,6 +167,13 @@ int main (void) {
 					}
 					bzero(res, RES);
 		}while(strstr(buffer, "quit") == 0);
+	}
+}
+
+		/* Der Vaterprozess wartet, bis alle Kindprozessefertig sind.  */
+		for(i = 0; i < NUM_OF_CHILDS; i++){
+			waitpid(pid[i], NULL, 0);
+		}
 
 		/* Das SharedMemory Segment wird abgekoppelt und freigegeben. */
 		shmdt(shar_mem);
@@ -226,6 +225,8 @@ int put(char* key, char* value, char* res){
 
 int get(char* key, char* res){
 	strcpy(res, "");
+	strcat(res, buf);
+	strcat(res,"\n");
 	if(KVStore.size == 0){
 		strcpy(res,"Store is empty.\n");
 		return 1;

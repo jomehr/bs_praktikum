@@ -72,7 +72,7 @@ int main (void) {
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons (1500);
 
-	if(bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0){
+	if(bind ( create_socket, (struct sockaddr *) &addrss, sizeof (address)) != 0){
 		printf( "The port is not free – busy!\n");
 	}
 
