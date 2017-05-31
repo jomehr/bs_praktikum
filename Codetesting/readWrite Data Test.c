@@ -41,12 +41,12 @@ int main()
 	fscanf(fp,"%s",readingRow);
     Data.size = atoi(strtok(readingRow,";"));
     Data.realSize = atoi(strtok(readingRow,";"));
-    Data.delFlag[i] = atoi(strtok(readingRow,";"));
-    for(i=0;i<BUF;i++){
-		/*
-			[WIP] Has to jump over size;realSize;delflag; to key;value
-		*/
+    /*
+		[WIP] Has to jump over size;realSize to delflag;key;value
+	*/
+	for(i=0;i<BUF;i++){
 		for(k=0;k<KV_STRING;k++){
+			Data.delFlag[i][k] = atoi(strtok(readingRow,";"));
 			strcpy(KVStore.key[i][k], strtok(NULL,"w"));
 			strcpy(KVStore.value[i][k], strtok(NULL,"w"));
 		}
@@ -70,16 +70,14 @@ int main()
     /*  Writes in order:
         size;realSize
 		flag1;key1;value1
-		flag2;key2;value2
+		delflag2;key2;value2
     */
-	
 	fprintf(fp , "%i;%i\n" , Data.size,Data.realSize);
     for(i=0;i<BUF;i++){
 		for(k=0;k<KV_STRING;k++){
-            fprintf(fp , "%i;%s;%s/n" , Data.delFlag[i][k],Data.key,Data.value[i][k]);
+            fprintf(fp , "%i;%s;%s\n" , Data.delFlag[i][k],Data.key,Data.value[i][k]);
 		}
 	}
-	
     fclose(fp);
 	
     return 0;
