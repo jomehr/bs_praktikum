@@ -23,50 +23,64 @@ int main()
 	Data->size=0;
 	Data->realSize=0;
 
-	char zeileEinlesen[500];
+	char readingRow[500];
 
     FILE *fp;
 
     int i;
-
-    fp = fopen("savedData.txt","w");
+	
+    /*
+		Opens data savedKVStore.txt for reading
+	*/
+    fp = fopen("savedKVStore.csv","r");
     if(fp == NULL){
-            printf("Dateifehler\n");
+            printf("Dataerror\n");
             return 1;
     }
-
+	
+	fscanf(fp,"%s",readingRow);
+    Data.size = atoi(strtok(readingRow,";"));
+    Data.realSize = atoi(strtok(readingRow,";"));
+    Data.delFlag[i] = atoi(strtok(readingRow,";"));
     for(i=0;i<BUF;i++){
-        fscanf(fp,"%s",zeileEinlesen);
-        /*
-            atoi -> char number to int
-        */
-        Data[i].size = atoi(strtok(zeileEinlesen,";"));
-        Data[i].realSize = atoi(strtok(zeileEinlesen,";"));
-        Data[i].delFlag[i] = atoi(strtok(zeileEinlesen,";"));
-        strcpy(KVStore[i].key, strtok(NULL,"w"));
-        strcpy(KVStore[i].value, strtok(NULL,"w"));
-    }
+		/*
+			[WIP] Has to jump over size;realSize;delflag; to key;value
+		*/
+		for(k=0;k<KV_STRING;k++){
+			strcpy(KVStore.key[i][k], strtok(NULL,"w"));
+			strcpy(KVStore.value[i][k], strtok(NULL,"w"));
+		}
+	}
     fclose(fp);
 
     /*
-    Hier unsere While-Schleifen
+		Our while loop
     */
 
-    /*öffnet die datei savedData.txt zum beschreiben*/
-    fp = fopen("savedData.txt","w");
+    /*
+		Opens data savedKVStore.csv for writing
+		Alternative: .txt
+	*/
+    fp = fopen("savedKVStore.csv","w");
     if(fp == NULL){
-            printf("Dateifehler\n");
+            printf("Dataerror\n");
             return 1;
     }
 
-    /*  schreibt im Stil
-        size;realSize;
-        flag;key;value
+    /*  Writes in order:
+        size;realSize
+		flag1;key1;value1
+		flag2;key2;value2
     */
+	
+	fprintf(fp , "%i;%i\n" , Data.size,Data.realSize);
     for(i=0;i<BUF;i++){
-            fprintf(fp , "%i;%i;/n" , Data[i].size , Data[i].realSize);
-            fprintf(fp , "%i;%s;%s/n" , Data[i].delFlag[i] , Data[i].key,Data[i].value);
-    }
+		for(k=0;k<KV_STRING;k++){
+            fprintf(fp , "%i;%s;%s/n" , Data.delFlag[i][k],Data.key,Data.value[i][k]);
+		}
+	}
+	
     fclose(fp);
+	
     return 0;
 }
