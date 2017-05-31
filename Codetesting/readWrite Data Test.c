@@ -47,8 +47,8 @@ int main()
 	for(i=0;i<BUF;i++){
 		for(k=0;k<KV_STRING;k++){
 			Data.delFlag[i][k] = atoi(strtok(readingRow,";"));
-			strcpy(KVStore.key[i][k], strtok(NULL,"w"));
-			strcpy(KVStore.value[i][k], strtok(NULL,"w"));
+			strcpy(KVStore.key[i][k], strtok(NULL,";"));
+			strcpy(KVStore.value[i][k], strtok(NULL,";"));
 		}
 	}
     fclose(fp);
