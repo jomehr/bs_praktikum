@@ -131,11 +131,11 @@ int main (void) {
 				}
 				bzero(res, RES);
 			}while(strstr(buffer, "quit") == 0);
-		printf("Executing quit...\n");
+			printf("Executing quit...\n");
 
-		close (new_socket);
-		//close (create_socket);
-		//return EXIT_SUCCESS;
+			close (new_socket);
+			//close (create_socket);
+			//return EXIT_SUCCESS;
 		}
 	}
 	return 0;
