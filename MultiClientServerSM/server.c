@@ -43,27 +43,27 @@ int main (void) {
 	address.sin_port = htons (1500);
 
 	if(bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0){
-		printf( "The port is not free – busy!\n");
+		printf( "The port is not free ï¿½ busy!\n");
 	}
 
 	if(listen(create_socket, 5)<0){
 		printf("Error on listening!\n");
 	}
-	
+
 	/*0644 to create a new segment with rw-r--r rights
 	0777 to create a new segment with unlimited access for all users*/
 	shmid = shmget (IPC_PRIVATE, sizeof(struct Data), IPC_CREAT|0777);
 	/*if ((shmid = shmget (IPC_PRIVATE, sizeof(struct Data), IPC_CREAT|0777)) == -1){
-		printf ("Fehler bei key %d, mit der Größe %d\n",
+		printf ("Fehler bei key %d, mit der Grï¿½ï¿½e %d\n",
 		IPC_PRIVATE, sizeof(struct Data));
 		//DeleteShmid = shmid;
 	}*/
 	/*attaches a shared memory segment identified by the variable shmid to the address space of the calling process*/
 	shmdata = (struct Data *) shmat(shmid,0,0);
-	
+
 	shmdata->size=0;
 	shmdata->realSize=0;
-	
+
 	addrlen = sizeof (struct sockaddr_in);
 
 	/*Kindprozesse erzeugen
@@ -104,7 +104,7 @@ int main (void) {
 					buffer[strlen (buffer) - 1] = ' ';
 				}
 				strtoken(buffer, separator, token, 3);
-				
+
 				if( strcmp(token[0], "put")==0){
 					printf("Executing put function...\n");
 					put(token[1], token[2], res, shmdata);
@@ -134,8 +134,8 @@ int main (void) {
 			printf("Executing quit...\n");
 
 			close (new_socket);
-			//close (create_socket);
-			//return EXIT_SUCCESS;
+			close (create_socket);
+			return EXIT_SUCCESS;
 		}
 	}
 	return 0;
