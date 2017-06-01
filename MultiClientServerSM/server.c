@@ -43,7 +43,7 @@ int main (void) {
 	address.sin_port = htons (1500);
 
 	if(bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0){
-		printf( "The port is not free � busy!\n");
+		printf( "The port is not free - busy!\n");
 	}
 
 	if(listen(create_socket, 5)<0){
@@ -54,7 +54,7 @@ int main (void) {
 	0777 to create a new segment with unlimited access for all users*/
 	shmid = shmget (IPC_PRIVATE, sizeof(struct Data), IPC_CREAT|0777);
 	/*if ((shmid = shmget (IPC_PRIVATE, sizeof(struct Data), IPC_CREAT|0777)) == -1){
-		printf ("Fehler bei key %d, mit der Gr��e %d\n",
+		printf ("Fehler bei key %d, mit der Groesse %d\n",
 		IPC_PRIVATE, sizeof(struct Data));
 		//DeleteShmid = shmid;
 	}*/
