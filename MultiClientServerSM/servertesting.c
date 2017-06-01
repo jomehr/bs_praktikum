@@ -70,7 +70,7 @@ int main (void) {
 	shmdata->size=0;
 	shmdata->realSize=0;
 
-	fp = fopen("savedKVStore.csv","r");
+	fp = fopen("savedKVStore.csv","w+");
 	if(fp == NULL){
 					printf("No file found\n");
 					//return 1;
@@ -161,14 +161,14 @@ int main (void) {
 			}while(strstr(buffer, "quit") == 0);
 			printf("Executing quit...\n");
 			//Daten werden gespeichert wenn quit
-			fp = fopen("savedKVStore.csv","w");
+			fp = fopen("savedKVStore.csv","w+");
 			if(fp == NULL){
 							printf("No file found\n");
 							//return 1;
 			}
 			//fprintf(fp , "%i;%i\n" , shmdata->size,shmdata->realSize);
 				for(i=0;i<BUF;i++){
-								fprintf(fp , "%i;%s;%s\n" , shmdata->delFlag[i],shmdata->key,shmdata->value[i]);
+								fprintf(fp , "%i;%s;%s\n" , shmdata->delFlag[i],shmdata->key[i],shmdata->value[i]);
 				}
 
 			fclose(fp);
