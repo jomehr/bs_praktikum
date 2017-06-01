@@ -6,9 +6,10 @@
 #define KV_STRING 1024
 #define RES 1024
 
+
 struct Data{
-	char key[BUF][KV_STRING];
-	char value[BUF][KV_STRING];
+	char key[BUF];
+	char value[BUF];
 	int delFlag[BUF];
 	int size;
 	int realSize;
@@ -24,7 +25,6 @@ int main()
 	Data->realSize=0;
 
 	char readingRow[500];
-
     FILE *fp;
 
     int i;
@@ -34,21 +34,20 @@ int main()
 	*/
     fp = fopen("savedKVStore.csv","r");
     if(fp == NULL){
-            printf("Dataerror\n");
+            printf("No file found.\n");
             return 1;
     }
 	
 	fscanf(fp,"%s",readingRow);
-    Data.size = atoi(strtok(readingRow,";"));
-    Data.realSize = atoi(strtok(readingRow,";"));
+    //Data.size = atoi(strtok(readingRow,";"));
+    //Data.realSize = atoi(strtok(readingRow,";"));
     /*
 		[WIP] Has to jump over size;realSize to delflag;key;value
 	*/
 	for(i=0;i<BUF;i++){
-		for(k=0;k<KV_STRING;k++){
-			Data.delFlag[i][k] = atoi(strtok(readingRow,";"));
-			strcpy(KVStore.key[i][k], strtok(NULL,";"));
-			strcpy(KVStore.value[i][k], strtok(NULL,";"));
+			Data.delFlag[i] = atoi(strtok(readingRow,";"));
+			strcpy(Data.key[i], strtok(NULL,";"));
+			strcpy(Data.value[i], strtok(NULL,";"));
 		}
 	}
     fclose(fp);
@@ -59,11 +58,10 @@ int main()
 
     /*
 		Opens data savedKVStore.csv for writing
-		Alternative: .txt
 	*/
     fp = fopen("savedKVStore.csv","w");
     if(fp == NULL){
-            printf("Dataerror\n");
+            printf("Fileerror\n");
             return 1;
     }
 
@@ -72,11 +70,9 @@ int main()
 		flag1;key1;value1
 		delflag2;key2;value2
     */
-	fprintf(fp , "%i;%i\n" , Data.size,Data.realSize);
+	//fprintf(fp , "%i;%i\n" , Data.size,Data.realSize);
     for(i=0;i<BUF;i++){
-		for(k=0;k<KV_STRING;k++){
-            fprintf(fp , "%i;%s;%s\n" , Data.delFlag[i][k],Data.key,Data.value[i][k]);
-		}
+            fprintf(fp , "%i;%s;%s\n" , Data.delFlag[i],Data.key[i],Data.value[i]);
 	}
     fclose(fp);
 	
