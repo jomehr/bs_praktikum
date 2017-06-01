@@ -86,6 +86,7 @@ int main (void) {
 			close(new_socket);
 		}else if(pid == 0){
 			//child process
+			printf("%i\n",getpid());
 			close(create_socket);
 			printf ("Client (%s) is connected!\n", inet_ntoa (address.sin_addr));
 			char menu[] = "Select put | get | del | list | quit: \n";
@@ -127,7 +128,8 @@ int main (void) {
 					write(new_socket, res, RES);
 				}else{
 					printf("Invalid input!\n");
-					write(new_socket, "Invalid input!\n", 29);
+					char invinp[] =  "Invalid input!\n";
+					write(new_socket, invinp, strlen(invinp));
 				}
 				bzero(res, RES);
 			}while(strstr(buffer, "quit") == 0);
