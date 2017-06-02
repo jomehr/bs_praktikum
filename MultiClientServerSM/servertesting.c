@@ -36,7 +36,7 @@ int main (void) {
 	int k;
 
 	//lokale Speicherung
-	char readingRow[500];
+	char readingRow[BUF];
 	FILE *fp;
 
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
@@ -70,19 +70,25 @@ int main (void) {
 	shmdata->size=0;
 	shmdata->realSize=0;
 
-	fp = fopen("savedKVStore.csv","w+");
+	fp = fopen("savedKVStore.csv","r");
 	if(fp == NULL){
 					printf("No file found\n");
 					//return 1;
 	}
-
+	char col[BUF];
+	char* tokk[BUF];
+	fscanf(fp,"%s",col);
+	printf("%s", col);
+	strtoken(col,";",tokk,2);
+	printf("Size from file: %s and RealSize: ..%s..\n",tokk[0],tokk[1]);
+	shmdata->size = atoi(tokk[0]);
+	shmdata->realSize = atoi(tokk[1]);
+	// fscanf(fp,"%s",readingRow,);
+	// shmdata->size = atoi(strtok(readingRow,";"));
+	// shmdata->realSize = atoi(strtok(readingRow,";"));
 	fscanf(fp,"%s",readingRow);
-		//shmdata->size = atoi(strtok(readingRow,";"));
-		//shmdata->realSize = atoi(strtok(readingRow,";"));
-		/*
-		[WIP] Has to jump over size;realSize to delflag;key;value
-	*/
 	for(i=0;i<BUF;i++){
+			//strtoken(col,";",tokk,3);
 			shmdata->delFlag[i] = atoi(strtok(readingRow,";"));
 			strcpy(shmdata->key[i], strtok(NULL,";"));
 			strcpy(shmdata->value[i], strtok(NULL,";"));
@@ -100,8 +106,8 @@ int main (void) {
 			exit(1);
 		}
 	}*/
-
-	while(1){
+	int squit=0;
+	while(squit==0){
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
 		pid=fork();
 		if(pid<0){
@@ -160,23 +166,25 @@ int main (void) {
 				bzero(res, RES);
 			}while(strstr(buffer, "quit") == 0);
 			printf("Executing quit...\n");
-			//Daten werden gespeichert wenn quit
-			fp = fopen("savedKVStore.csv","w+");
+			close (new_socket);
+			close (create_socket);
+			squit=1;
+			//return EXIT_SUCCESS;
+		}
+		
+	}
+	printf("kommt bis hier mit squit %i\n", squit);
+	fp = fopen("savedKVStore.csv","w");
 			if(fp == NULL){
-							printf("No file found\n");
-							//return 1;
+				printf("No file found\n");
+				//return 1;
 			}
-			//fprintf(fp , "%i;%i\n" , shmdata->size,shmdata->realSize);
-				for(i=0;i<BUF;i++){
-								fprintf(fp , "%i;%s;%s\n" , shmdata->delFlag[i],shmdata->key[i],shmdata->value[i]);
-				}
+			fprintf(fp , "%i;%i\n" , shmdata->size,shmdata->realSize);
+			for(i=0;i<BUF;i++){
+				fprintf(fp , "%i;%s;%s\n" , shmdata->delFlag[i],shmdata->key[i],shmdata->value[i]);
+			}
 
 			fclose(fp);
 
-			close (new_socket);
-			close (create_socket);
-			return EXIT_SUCCESS;
-		}
-	}
 	return 0;
 }
