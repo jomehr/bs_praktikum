@@ -66,16 +66,9 @@ int main (void) {
 
 	addrlen = sizeof (struct sockaddr_in);
 
-	/*Kindprozesse erzeugen
-	for(i = 0; i < NUM_OF_CHILDS; i++) {
-		pid[i] = fork();
-		if (pid[i] == -1) {
-			printf("Kindprozess konnte nicht erzeugt werden!\n");
-			exit(1);
-		}
-	}*/
-
 	while(1){
+		//create_socket is rendez-vous descriptor, new_socket is connection descriptor
+		//accept() blocks until there's a request
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
 		pid=fork();
 		if(pid<0){
