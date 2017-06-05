@@ -10,9 +10,6 @@ struct Data{
 	int size;						//last array index
 	int realSize;					//no of entries in array
 };
-//Only KVStore as a variable has the functions hereunder provided,
-//not the stuct itself!
-//struct Data KVStore;
 char buf[BUFSIZ];
 
 int strtoken(char* str, char* separator, char** token, int size);
@@ -97,7 +94,6 @@ int del(char* key, char* res, struct Data *shmdata){
 
 void list(char* res, struct Data *shmdata){
 	strcpy(res, "Size: ");
-	//char buf[BUFSIZ];
 	//int converts to char array
 	snprintf(buf, sizeof(buf), "%d", shmdata->size);
 	strcat(res, buf);
