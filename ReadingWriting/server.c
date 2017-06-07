@@ -1,3 +1,9 @@
+/*
+	Semaphore löschen, falls man a.out nicht ausführen kann
+	ipcs -> (SemaphoreID)
+	ipcrm -s (SemaphoreID)
+*/
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -12,8 +18,51 @@
 #include <sys/wait.h>
 #include "kvs.c"
 
+/*Semaphore*/
+#include <sys/sem.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#define LOCK       -1
+#define UNLOCK      1
+#define PERM 0666      /* Zugriffsrechte */
+#define KEY  123458L
+
 #define BUF 1024
 #define RES 1024
+
+static struct sembuf semaphore;
+static int semid;
+
+static int init_semaphore (void) {
+	
+   /* Testen, ob das Semaphor bereits existiert */
+   semid = semget (KEY, 0, IPC_PRIVATE);
+   if (semid < 0) {
+      /* ... existiert noch nicht, also anlegen        */
+      /* Alle Zugriffsrechte der Dateikreierungsmaske */
+      /* erlauben                                     */
+      umask(0);
+      semid = semget (KEY, 1, IPC_CREAT | IPC_EXCL | PERM);
+      if (semid < 0) {
+         printf ("Fehler beim Anlegen des Semaphors ...\n");
+         return -1;
+      }
+      printf ("(angelegt) Semaphor-ID : %d\n", semid);
+      /* Semaphor mit 1 initialisieren */
+      if (semctl (semid, 0, SETVAL, (int) 1) == -1)
+         return -1;
+   }
+   return 1;
+}
+static int semaphore_operation (int op) {
+   semaphore.sem_op = op;
+   semaphore.sem_flg = SEM_UNDO;
+   if( semop (semid, &semaphore, 1) == -1) {
+      perror(" semop ");
+      exit (EXIT_FAILURE);
+   }
+   return 1;
+}
 
 int main (void) {
 	const int y = 1;
@@ -30,6 +79,12 @@ int main (void) {
 	char* separator = " ";
 	char key[BUF],value[BUF],res[BUF], readingRow[BUF];
 	FILE *fp;
+	
+	/*Semaphore*/
+	int semaphoreid;
+	semaphoreid = init_semaphore ();
+  
+	if (semaphoreid < 0) return EXIT_FAILURE;
 
 	if((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0){
 		printf ("Socket created!\n");
@@ -127,20 +182,26 @@ int main (void) {
 				strtoken(buffer, separator, token, 3);
 
 				if( strcmp(token[0], "put")==0){
+					semaphore_operation ( LOCK );
 					printf("Executing put function...\n");
 					put(token[1], token[2], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
+					semaphore_operation ( UNLOCK );
 				}else if (strcmp(token[0], "get")==0){
+					semaphore_operation ( LOCK );
 					printf("Executing get function...\n");
 					get(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
+					semaphore_operation ( UNLOCK );
 				}else if( strcmp(token[0], "del")==0){
+					semaphore_operation ( LOCK );
 					printf("Executing del function...\n");
 					del(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
+					semaphore_operation ( UNLOCK );
 				}else if( strcmp(token[0], "list")==0){
 					printf("Executing list function...\n");
 					bzero(res, RES);
@@ -160,7 +221,8 @@ int main (void) {
 		}	
 	}
 	printf("Exiting Main-While-Loop with Mainquit");
-			
+	
+	semaphore_operation ( LOCK );		
 	/*
 		Writing File Operation
 	*/
@@ -181,6 +243,8 @@ int main (void) {
 	}
 	
 	fclose(fp);
+	
+	semaphore_operation ( UNLOCK );
 			
 	return EXIT_SUCCESS;
 }

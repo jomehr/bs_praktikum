@@ -105,7 +105,7 @@ void list(char* res, struct Data *shmdata){
 	int i;
 	for(i=0;i<shmdata->size;i++){
 		if(shmdata->delFlag[i]!=1){
-			printf("Index %i\tKey: %s\tValue: %s\n", i, shmdata->key[i], shmdata->value[i]);
+			printf("Index: %5i\tKey: %-20s\tValue: %s\n", i, shmdata->key[i], shmdata->value[i]);
 			strcat(res,shmdata->key[i]);
 			strcat(res," | ");
 			strcat(res,shmdata->value[i]);
