@@ -55,44 +55,44 @@ int main (void) {
 	/*attaches a shared memory segment identified by the variable shmid to the address space of the calling process*/
 	shmdata = (struct Data *) shmat(shmid,0,0);
 	
-	/*Should be 0 when initialising*/
-	shmdata->size=5;
-	shmdata->realSize=5;
+	/*5 has to be 0*/
+	shmdata->size=0;
+	shmdata->realSize=0;
 	
 	/*
-		Reading File Operation has to be placed here after Shared Memory is created
+		Reading File Operation without Size/RealSize
 	*/
 	fp = fopen("reading.csv","r");
     if(fp == NULL){
             printf("Keine Datei gefunden\n");
             return 1;
     }
-
+	/*Each line seperatly*/
 	fscanf(fp,"%s",readingRow);
-    for(i=0;i<5;i++){
+	shmdata->realSize= atoi(strtok(readingRow,";"));
+	
+	fscanf(fp,"%s",readingRow);
+	shmdata->size= atoi(strtok(readingRow,";"));
+	
+	fscanf(fp,"%s",readingRow);
+    for(i=0;i<BUF;i++){
         shmdata->delFlag[i]= atoi(strtok(readingRow,";"));
 		strcpy(shmdata->key[i], strtok(NULL,";"));
         strcpy(shmdata->value[i], strtok(NULL,";"));
 		fscanf(fp,"%s",readingRow);
-	
     }
-
     fclose(fp);
 	
-	printf("\nFirst 3 Entries after File Reading Operation\n");
-	printf("Size: %i \t RealSize: %i\n",shmdata->size, shmdata->realSize);
-	for(i=0;i<3;i++){
-		printf("DelFlag: %i \t Key: %s \t Value: %s \n", shmdata->delFlag[i], shmdata->key[i], shmdata->value[i]);
-		// printf("DelFlag: %i \t Key: %s \t Value: %s \n", shmdata->delFlag[1], shmdata->key[1], shmdata->value[1]);
-		// printf("DelFlag: %i \t Key: %s \t Value: %s \n", shmdata->delFlag[2], shmdata->key[2], shmdata->value[2]);
+	printf("\nFirst 7 datasets after File Reading Operation\n");
+	printf("realSize: %i\tSize: %i\n",shmdata->size, shmdata->realSize);
+	for(i=0;i<7;i++){
+		printf("Index: %i\tDelFlag: %i\tKey: %s\tValue: %s\n",i , shmdata->delFlag[i], shmdata->key[i], shmdata->value[i]);
 	}
-	printf("\nList Operation\n");
 	
-	
+	printf("\nList Function Operation\n");
 	bzero(res, RES);
 	list(res, shmdata);
 
-	
 	addrlen = sizeof (struct sockaddr_in);
 
 	while(mainquit==0){
@@ -157,22 +157,29 @@ int main (void) {
 			close (new_socket);
 			close (create_socket);
 			mainquit=1;
-		}
-		
+		}	
 	}
 	printf("Exiting Main-While-Loop with Mainquit");
 			
 	/*
 		Writing File Operation
-	*/	
+	*/
+	
 	fp = fopen("writing.csv","w");
 	if(fp == NULL){
 		printf("No file found!\n");
 	}
+	
+	/*First Row realSize*/
+	fprintf(fp, "%i;\n",shmdata->realSize);
+	
+	/*Second Row size*/
+	fprintf(fp, "%i;\n",shmdata->size);
+	/*Row 3 to BUF  realSize*/
 	for(i=0;i<BUF;i++){
 		fprintf(fp, "%i;%s;%s;\n", shmdata->delFlag[i], shmdata->key[i], shmdata->value[i]);
 	}
-
+	
 	fclose(fp);
 			
 	return EXIT_SUCCESS;
