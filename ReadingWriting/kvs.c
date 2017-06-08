@@ -26,17 +26,17 @@ int strtoken(char* str, char* separator, char** token, int size) {
 	return (i);
 }
 
-int put(char* key, char* value, char* res, struct Data *shmdata){
+int put (char* key, char* value, char* res, struct Data *shmdata) {
 	int i;
-	for(i=0;i<shmdata->size;i++){
-		if(strcmp(shmdata->key[i],key)==0){
+	for (i=0;i<shmdata->size;i++) {
+		if (strcmp(shmdata->key[i],key)==0) {
 			strcpy(shmdata->value[i],value);
 			strcpy(res,"Put successful! Existing entry replaced.");
 			return 1;
 		}
 	}
-	for(i=0;i<shmdata->size;i++){
-		if(shmdata->delFlag[i]==1){
+	for (i=0;i<shmdata->size;i++) {
+		if (shmdata->delFlag[i]==1) {
 			strcpy(shmdata->key[i],key);
 			strcpy(shmdata->value[i],value);
 			shmdata->delFlag[i]=0;
@@ -53,16 +53,16 @@ int put(char* key, char* value, char* res, struct Data *shmdata){
 	return 0;
 }
 
-int get(char* key, char* res, struct Data *shmdata){
+int get (char* key, char* res, struct Data *shmdata) {
 	strcpy(res, buf);
 	strcat(res,"\n");
-	if(shmdata->size == 0){
+	if (shmdata->size == 0) {
 		strcpy(res,"Store is empty!");
 		return 1;
 	}
 	int i;
 	for (i=0; i<shmdata->size;i++) {
-		if(strcmp(shmdata->key[i],key)==0){
+		if (strcmp(shmdata->key[i],key)==0) {
 			strcpy(res,shmdata->value[i]);
 			return 0;
 		}
@@ -71,15 +71,15 @@ int get(char* key, char* res, struct Data *shmdata){
 	return 1;
 }
 
-int del(char* key, char* res, struct Data *shmdata){
+int del (char* key, char* res, struct Data *shmdata) {
 	strcpy(res, "");
-	if(shmdata->size == 0){
+	if (shmdata->size == 0) {
 		strcpy(res,"Store is empty!");
 		return 1;
 	}
 	int i;
-	for(i=0;i<shmdata->size;i++){
-		if(strcmp(shmdata->key[i],key)==0){
+	for (i=0;i<shmdata->size;i++) {
+		if (strcmp(shmdata->key[i],key)==0) {
 			strcpy(res,shmdata->value[i]);
 			shmdata->delFlag[i]=1;
 			strcpy(shmdata->key[i],"");
@@ -92,19 +92,19 @@ int del(char* key, char* res, struct Data *shmdata){
 	return 1;
 }
 
-void list(char* res, struct Data *shmdata){
+void list (char* res, struct Data *shmdata) {
 	strcpy(res, "Size: ");
 	//int converts to char array
 	snprintf(buf, sizeof(buf), "%d", shmdata->size);
 	strcat(res, buf);
 	strcat(res,"\n");
-	if(shmdata->size==0){
+	if (shmdata->size==0) {
 		printf("Store is empty!");
 		return;
 	}
 	int i;
-	for(i=0;i<shmdata->size;i++){
-		if(shmdata->delFlag[i]!=1){
+	for (i=0;i<shmdata->size;i++) {
+		if (shmdata->delFlag[i]!=1) {
 			printf("Index: %5i\tKey: %-20s\tValue: %s\n", i, shmdata->key[i], shmdata->value[i]);
 			strcat(res,shmdata->key[i]);
 			strcat(res," | ");
