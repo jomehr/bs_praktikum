@@ -1,17 +1,20 @@
-/*
+/*	
+	If "Error occured, when creating semaphore!":
+	"ipcs" gets SemaphoreID
+	"ipcrm -s SemaphoreID" to delete it
+	
 	Semaphore with
 	semaphore_operation (LOCK) and
 	semaphore_operation (UNLOCK)
 	
 	Reading from File reading.csv
 	Writing to File writing.csv
-*/
-
-/*
+	
 	TODO 
 	Leser-Schreiber-Problem Alle dürfen lesen, wenn einer schreibt, darf keiner lesen
 	mutex();
 */
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -53,7 +56,7 @@ static int init_semaphore (void) {
          return -1;
       }
       printf("Applied Semaphore-ID: %d\n", semid);
-	  printf("Has to be deleted with shell command $ ipcrm -s %d\n", semid);
+	  printf("Has to be deleted with shell command \"$ ipcrm -s %d\"\n", semid);
       /*initialize semaphore with 1*/
       if (semctl (semid, 0, SETVAL, (int) 1) == -1)
          return -1;
@@ -73,7 +76,7 @@ static int semaphore_operation (int op) {
 
 int main (void) {
 	const int y = 1;
-	int create_socket, new_socket, shmid, pid, whilequit=0, semaphoreid, i, k;
+	int create_socket, new_socket, shmid, pid, stop=0, semaphoreid, i, k;
 	
 	socklen_t addrlen;
 	ssize_t size;
@@ -156,7 +159,7 @@ int main (void) {
 
 	addrlen = sizeof (struct sockaddr_in);
 
-	while(whilequit==0){
+	while(stop==0){
 		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
 		pid=fork();
 		if(pid<0){
@@ -167,10 +170,10 @@ int main (void) {
 			close(new_socket);
 		}else if(pid == 0){
 			//child process
-			printf("%i\n",getpid());
+			printf("ChildId: %i\n",getpid());
 			close(create_socket);
 			printf ("Client (%s) is connected!\n", inet_ntoa (address.sin_addr));
-			char menu[] = "Select: put | get | del | list | quit\n";
+						char menu[] = "Select: put | get | del | list | disc | stop\n";
 			write(new_socket, menu, strlen(menu));
 
 			do{
@@ -188,53 +191,71 @@ int main (void) {
 				}
 				strtoken(buffer, separator, token, 3);
 
-				if( strcmp(token[0], "put")==0){		
-					printf("Executing put function\n");
+				if( strcmp(token[0], "put")==0){
+					semaphore_operation ( LOCK );
+					printf("Executing put function...\n");
 					put(token[1], token[2], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
 					semaphore_operation ( UNLOCK );
 				}else if (strcmp(token[0], "get")==0){
-					printf("Executing get function\n");
+					semaphore_operation ( LOCK );
+					printf("Executing get function...\n");
 					get(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
 					semaphore_operation ( UNLOCK );
-					break;
 				}else if( strcmp(token[0], "del")==0){
-					printf("Executing del function\n");
+					semaphore_operation ( LOCK );
+					printf("Executing del function...\n");
 					del(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
 					semaphore_operation ( UNLOCK );
+					
 				}else if( strcmp(token[0], "list")==0){
-					printf("Executing list function\n");
+					printf("Executing list function...\n");
 					bzero(res, RES);
 					list(res, shmdata);
 					write(new_socket, res, RES);
 					semaphore_operation ( UNLOCK );
-				}else{
+					
+				}else if(strcmp(token[0], "disc")==0){
+					printf("Disconnecting Client!\n");
+					char disc[] =  "Disconnected!\n";
+					write(new_socket, disc, strlen(disc));
+					close (new_socket);
+					semaphore_operation ( UNLOCK );					
+				}else if((strcmp(token[0], "put")!=0)  &&
+						 (strcmp(token[0], "get")!=0)  &&
+						 (strcmp(token[0], "del")!=0)  &&
+						 (strcmp(token[0], "list")!=0) &&
+						 (strcmp(token[0], "disc")!=0) &&
+						 (strcmp(token[0], "stop")!=0)){
 					printf("Invalid input!\n");
 					char invinp[] =  "Invalid input!\n";
 					write(new_socket, invinp, strlen(invinp));
 				}
+				
 				bzero(res, RES);
-			}while(strstr(buffer, "quit") == 0);
-			printf("Executing Quit\n");
-			close (new_socket);
+				
+			}while(strstr(buffer, "stop") == 0);
+			printf("Executing Stop - Stopping Server Socket\n");
+			stop=1;
 			close (create_socket);
-			whilequit=1;
-			/*Unlocked if "Quit" is used*/
-			semaphore_operation ( UNLOCK );
+			/*Kills Child*/
+			kill(pid, SIGKILL);
 		}	
 	}
-	printf("Exiting Main-While-Loop with whilequit!");
+	printf("Exiting Main-While-Loop with stop!");
 	
-	semaphore_operation ( LOCK );		
+			
 	/*Writing File Operation*/
+	semaphore_operation ( LOCK );
 	fp = fopen("writing.csv","w");
+	
 	if(fp == NULL){
-		printf("No file found!\n");
+		printf("No file found! - Creating File named: writing.csv\n");
 	}
 	/*First Row realSize*/
 	fprintf(fp, "%i;\n", shmdata->realSize);
@@ -246,11 +267,12 @@ int main (void) {
 	}
 	
 	fclose(fp);
-	
 	semaphore_operation ( UNLOCK );
 	
 	/*Detach Semaphore*/
+	printf("Has to be deleted with shell command $ ipcrm -s %d\n", semid);
 	semctl (semid, 0, IPC_RMID, 0);
 	
+	//abort();
 	return EXIT_SUCCESS;
 }

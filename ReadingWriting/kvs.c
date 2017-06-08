@@ -57,7 +57,7 @@ int get(char* key, char* res, struct Data *shmdata){
 	strcpy(res, buf);
 	strcat(res,"\n");
 	if(shmdata->size == 0){
-		strcpy(res,"Store is empty.");
+		strcpy(res,"Store is empty!");
 		return 1;
 	}
 	int i;
@@ -74,7 +74,7 @@ int get(char* key, char* res, struct Data *shmdata){
 int del(char* key, char* res, struct Data *shmdata){
 	strcpy(res, "");
 	if(shmdata->size == 0){
-		strcpy(res,"Store is empty.");
+		strcpy(res,"Store is empty!");
 		return 1;
 	}
 	int i;
@@ -99,7 +99,7 @@ void list(char* res, struct Data *shmdata){
 	strcat(res, buf);
 	strcat(res,"\n");
 	if(shmdata->size==0){
-		printf("Store is empty.");
+		printf("Store is empty!");
 		return;
 	}
 	int i;
