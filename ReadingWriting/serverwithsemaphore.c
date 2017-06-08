@@ -56,7 +56,7 @@ static int init_semaphore (void) {
          return -1;
       }
       printf("Applied Semaphore-ID: %d\n", semid);
-	  printf("Has to be deleted with shell command \"$ ipcrm -s %d\"\n", semid);
+	    printf("Has to be deleted with shell command \"$ ipcrm -s %d\"\n", semid);
       /*initialize semaphore with 1*/
       if (semctl (semid, 0, SETVAL, (int) 1) == -1)
          return -1;
@@ -160,7 +160,7 @@ int main (void) {
 	addrlen = sizeof (struct sockaddr_in);
 
 	while (stop==0){
-		new_socket = accept ( create_socket, (struct sockaddr *) &address, &addrlen );
+		new_socket = accept(create_socket, (struct sockaddr *) &address, &addrlen);
 		pid=fork();
 		if(pid<0){
 			printf("Fork not successful!\n");
@@ -170,14 +170,14 @@ int main (void) {
 			close (new_socket);
 		}else if(pid == 0) {
 			//child process
-			printf("ChildId: %i\n",getpid());
+			printf("ChildId: %i\n", getpid());
 			close(create_socket);
 			printf ("Client (%s) is connected!\n", inet_ntoa (address.sin_addr));
 			char menu[] = "Select: put | get | del | list | disc | stop\n";
 			write(new_socket, menu, strlen(menu));
 
 			do {
-				semaphore_operation ( LOCK );
+				semaphore_operation (LOCK);
 				bzero(buffer,BUF);
 				recv (new_socket, buffer, BUF, 0);
 				//removes trailing line from buffer
@@ -223,12 +223,12 @@ int main (void) {
 					write(new_socket, disc, strlen(disc));
 					close(new_socket);
 					semaphore_operation (UNLOCK);
-				}else if ((strcmp(token[0], "put")!=0)  &&
-						 (strcmp(token[0], "get")!=0)  &&
-						 (strcmp(token[0], "del")!=0)  &&
-						 (strcmp(token[0], "list")!=0) &&
-						 (strcmp(token[0], "disc")!=0) &&
-						 (strcmp(token[0], "stop")!=0)) {
+				}else if ((strcmp(token[0], "put")!=0) &&
+    						 (strcmp(token[0], "get")!=0)  &&
+    						 (strcmp(token[0], "del")!=0)  &&
+    						 (strcmp(token[0], "list")!=0) &&
+    						 (strcmp(token[0], "disc")!=0) &&
+    						 (strcmp(token[0], "stop")!=0)) {
 					printf("Invalid input!\n");
 					char invinp[] =  "Invalid input!\n";
 					write(new_socket, invinp, strlen(invinp));
