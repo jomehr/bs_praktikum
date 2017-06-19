@@ -41,7 +41,8 @@ int main(int argc , char *argv[]) {
       puts("Receive failed!");
       break;
     }
-    puts(res);
+
+    printf("\n%s\n", res);
     printf("Input your command: \n");
     fgets(buffer, BUF, stdin);
 
@@ -63,6 +64,7 @@ int main(int argc , char *argv[]) {
       res[strlen (res) - 1] = ' ';
     }
     printf("%s", res);
+    printf("\n");
 
     //Cleanse Buffer
     bzero(buffer, BUF);

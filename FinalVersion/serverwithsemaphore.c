@@ -1,4 +1,4 @@
-/*	
+/*
 	If "Error occured, when creating semaphore!":
 	"ipcs" gets SemaphoreID
 	"ipcrm -s SemaphoreID" to delete it
@@ -67,7 +67,7 @@ int main (void) {
 	char* token[100];
 	char* separator = " ";
 	char key[BUF], value[BUF], res[BUF];
-	
+
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0) {
 		printf("\nSocket created!\n");
 	}
@@ -88,21 +88,21 @@ int main (void) {
 	/*0644 to create a new segment with rw-r--r rights
 	0777 to create a new segment with unlimited access for all users*/
 	shmid = shmget(IPC_PRIVATE, sizeof(struct Data), IPC_CREAT|0777);
-	
+
 	shmrcid=shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0777);
 	semid=create_semaphore();
 	mutex=create_semaphore();
-	
+
 	/*attaches a shared memory segment identified by the variable shmid to the address space of the calling process*/
 	shmdata = (struct Data *) shmat(shmid,0,0);
 	shmdata->size = 0;
 	shmdata->realSize = 0;
-	
+
 	rc = (int*) shmat(shmrcid,0,0);
 	rc = 0;
-	
+
 	readData(shmdata);
-	
+
 	//Output file contents, if file exists
 	printf("realSize: %i\tSize: %i\n",shmdata->realSize, shmdata->size);
 	for (i=0; i<shmdata->size; i++) {
@@ -140,7 +140,7 @@ int main (void) {
 					buffer[strlen (buffer) - 1] = ' ';
 				}*/
 				strtoken(buffer, separator, token, 3);
-				
+
 				if(	!(strcmp(token[0], "put")) == 0  &&
 					!(strcmp(token[0], "get")) == 0  &&
 					!(strcmp(token[0], "del")) == 0  &&
@@ -155,7 +155,7 @@ int main (void) {
 					printf("Executing put function...\n");
 					put(token[1], token[2], res, shmdata);
 					write(new_socket, res, RES);
-					write(new_socket, "\n", 2);
+					//write(new_socket, "\n", 2);
 					saveData(shmdata);
 					sleep(5);
 					semaphore_op(UNLOCK,semid);
@@ -163,45 +163,45 @@ int main (void) {
 					semaphore_op(LOCK,mutex);
 					rc++;
 					if(rc == 1){
-						semaphore_op(LOCK,semid);
-					} 
+					semaphore_op(LOCK,semid);
+					}
 					semaphore_op(UNLOCK,mutex);
 					printf("Executing get function...\n");
 					get(token[1], res, shmdata);
 					write(new_socket, res, RES);
-					write(new_socket, "\n", 2);
+					//write(new_socket, "\n", 2);
 					semaphore_op(LOCK,mutex);
-                    rc--;
-                    if(rc == 0){
-						semaphore_op(UNLOCK,semid);
-					} 
-                    semaphore_op(UNLOCK,mutex);
+          rc--;
+          if(rc == 0){
+					semaphore_op(UNLOCK,semid);
+					}
+          semaphore_op(UNLOCK,mutex);
 				}else if (strcmp(token[0], "del") == 0) {
 					semaphore_op(LOCK,semid);
 					printf("Executing del function...\n");
 					del(token[1], res, shmdata);
 					write(new_socket, res, RES);
-					write(new_socket, "\n", 2);
+					//write(new_socket, "\n", 2);
 					saveData(shmdata);
 					semaphore_op(UNLOCK,semid);
 				}else if (strcmp(token[0], "list") == 0) {
 					semaphore_op(LOCK,mutex);
 					rc++;
 					if(rc == 1){
-						semaphore_op(LOCK,semid);
-					} 
+					semaphore_op(LOCK,semid);
+					}
 					semaphore_op(UNLOCK,mutex);
 					printf("Executing list function...\n");
 					bzero(res, RES);
 					list(res, shmdata);
 					write(new_socket, res, RES);
-					write(new_socket, "\n", 2);
+					//write(new_socket, "\n", 2);
 					semaphore_op(LOCK,mutex);
-                    rc--;
-                    if(rc == 0){
-						semaphore_op(UNLOCK,semid);
-					} 
-                    semaphore_op(UNLOCK,mutex);
+          rc--;
+          if(rc == 0){
+					semaphore_op(UNLOCK,semid);
+					}
+          semaphore_op(UNLOCK,mutex);
 				//Just adds one more doWhile - Invalid input run
 				}
 				/*else if (strcmp(token[0], "disc") == 0) {
@@ -210,7 +210,7 @@ int main (void) {
 					write(new_socket, menu1, strlen(menu1));
 					//Second argument: 0 disables receive, 1 disables send, 2 disables both
 					shutdown(new_socket, 2);
-				}*/					
+				}*/
 				bzero(res, RES);
 			}while(strcmp(buffer, "stop") != 0);
 			printf("\nExecuting Stop - Stopping Server Socket\n");
@@ -218,10 +218,10 @@ int main (void) {
 			close(new_socket);
 		}
 	}
-		
+
 	/*Writing File Operation*/
 	saveData(shmdata);
-	
+
 	/*ServerSocket closed*/
 	close(create_socket);
 	/*
@@ -235,6 +235,6 @@ int main (void) {
 	*/
 	/*Kills Child*/
 	kill(pid, SIGTERM);
-	
+
 	return EXIT_SUCCESS;
 }
