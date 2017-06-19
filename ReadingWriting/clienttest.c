@@ -42,6 +42,7 @@ int main(int argc , char *argv[]) {
       break;
     }
 
+    //printf("\nSelect: put | get | del | list | disc | stop\n");
     puts(res);
     printf("Input your command: \n");
     fgets(buffer, BUF, stdin);
@@ -64,7 +65,7 @@ int main(int argc , char *argv[]) {
     if ((strlen(res)>0) && (res[strlen (res) - 1] == '\n')) {
       res[strlen (res) - 1] = ' ';//\0 for telnet
     }
-    printf(".%s.", res);
+    printf("%s", res);
 
     //Cleanse Buffer
     bzero(buffer, BUF);
