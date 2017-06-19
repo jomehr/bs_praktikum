@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #define BUF 1024
 #define RES 1024
 
@@ -35,32 +36,39 @@ int main(int argc , char *argv[]) {
   printf("Connected with Server (%s) \n", inet_ntoa(address.sin_addr));
 
   while(1) {
-    /*
-    hier input als switch create_socket
-    */
-    //test write Data
+
     if (recv(clientsocket, res, RES, 0) < 0) {
       puts("Receive failed!");
       break;
     }
+
     puts(res);
     printf("Input your command: \n");
     fgets(buffer, BUF, stdin);
+
     //Send Data
     if (send(clientsocket, buffer, BUF, 0) < 0) {
       puts("Send failed!");
       return 1;
     }else {
       puts("Send success!");
-      puts(buffer);
+      //puts(buffer);
     }
 
+    //Receive Data
     if (recv(clientsocket, res, RES, 0) < 0) {
       puts("Receive failed!");
       break;
     }
     puts("Server reply:");
-    puts(res);
+    if ((strlen(res)>0) && (res[strlen (res) - 1] == '\n')) {
+      res[strlen (res) - 1] = ' ';//\0 for telnet
+    }
+    printf(".%s.", res);
+
+    //Cleanse Buffer
+    bzero(buffer, BUF);
+    bzero(res, RES);
   }
 
   close(clientsocket);
