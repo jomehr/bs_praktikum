@@ -9,10 +9,6 @@
 	
 	Reading from File reading.csv
 	Writing to File writing.csv
-	
-	TODO 
-	Leser-Schreiber-Problem Alle dürfen lesen, wenn einer schreibt, darf keiner lesen
-	mutex();
 */
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -74,7 +70,7 @@ static int semaphore_operation (int op) {
 
 int main (void) {
 	const int y = 1;
-	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, i, k;
+	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, db, mutex, rc, i, k;
 	socklen_t addrlen;
 	ssize_t size;
 	struct sockaddr_in address;
@@ -113,12 +109,23 @@ int main (void) {
 	shmdata = (struct Data *) shmat(shmid,0,0);
 	shmdata->size = 0;
 	shmdata->realSize = 0;
-	
-	
+	/*
+	db = semget(IPC_PRIVATE, 1, IPC_CREAT | 0777);
+    if(db == -1){
+      printf("Semaphore group couldn't be created\n");
+      return -1;
+    }
 
-	/*Reading File Operation with Semaphore*/
-//semaphore_operation ( LOCK );
-	fp = fopen("reading.csv","r");
+    mutex = semget(IPC_PRIVATE, 1, IPC_CREAT | 0777);
+    if(mutex == -1){
+      printf("Semaphore group couldn't be created\n");
+      return -1;
+    }
+	semctl(db, 0, SETALL, (int) 1);
+    semctl(mutex, 0, SETALL, (int) 1);
+	*/
+	/*Reading File Operation*/
+	fp = fopen("writing.csv","r");
     if (fp == NULL) {
             printf("\nNo reading file found!\n");
             return 1;
@@ -148,7 +155,6 @@ int main (void) {
 	printf("\nList Function Operation\n");
 	bzero(res, RES);
 	list(res, shmdata);
-//semaphore_operation ( UNLOCK );
 
 	addrlen = sizeof(struct sockaddr_in);
 
@@ -175,18 +181,19 @@ int main (void) {
 			write(new_socket, menu, strlen(menu));
 			
 			do {
-//semaphore_operation ( LOCK );
 				bzero(buffer, BUF);
 				recv (new_socket, buffer, BUF, 0);
+				printf("RawContent:%s.\n", buffer);
 				//removes trailing line from buffer
 				if ((strlen(buffer)>0) && (buffer[strlen (buffer) - 1] == '\n')) {
-					buffer[strlen (buffer) - 1] = '\0';
+					buffer[strlen (buffer) - 1] = ' ';//\0 for telnet
 				}
-				printf("%s\n", buffer);
+				printf("BufferContent:%s.\n", buffer);
 				//adds a trailing whitespace to the buffer
-				if ((buffer[strlen (buffer) - 2] != ' ')) {
+				/*if ((buffer[strlen (buffer) - 2] != ' ')) {
 					buffer[strlen (buffer) - 1] = ' ';
-				}
+				}*///uncomment for telnet
+				printf("BufferContent:%s.\n", buffer);
 				strtoken(buffer, separator, token, 3);
 				
 				if(	!(strcmp(token[0], "put")) == 0  &&
@@ -198,31 +205,48 @@ int main (void) {
 					printf("Invalid input!\n");
 					char invinp[] =  "Invalid input!\n";
 					write(new_socket, invinp, strlen(invinp));
-//semaphore_operation( UNLOCK );
 				}else if (strcmp(token[0], "put") == 0) {
+					//semop(db,&down,1);
 					printf("Executing put function...\n");
 					put(token[1], token[2], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
-//semaphore_operation ( UNLOCK );
+					//sleep(5000);
+					//semop(db,&up,1);
 				}else if (strcmp(token[0], "get") == 0) {
+					//semop(mutex,&down,1);
+					//rc = rc + 1;
+					//if(rc == 1) semop(db, &down, 1);
+					//semop(mutex, &up, 1);
 					printf("Executing get function...\n");
 					get(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
-//semaphore_operation ( UNLOCK );
+					//semop(mutex, &down, 1);
+                    //rc = rc - 1;
+                    //if(rc == 0) semop(db, &up, 1);
+                    //semop(mutex, &up, 1);
 				}else if (strcmp(token[0], "del") == 0) {
+					//semop(db, &down, 1);
 					printf("Executing del function...\n");
 					del(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
-//semaphore_operation ( UNLOCK );
+					//semop(db, &up, 1);
 				}else if (strcmp(token[0], "list") == 0) {
+					//semop(mutex,&down,1);
+					//rc = rc + 1;
+					//if(rc == 1) semop(db, &down, 1);
+					//semop(mutex, &up, 1);
 					printf("Executing list function...\n");
 					bzero(res, RES);
 					list(res, shmdata);
 					write(new_socket, res, RES);
-//semaphore_operation ( UNLOCK );
+					write(new_socket, "\n", 2);
+					//semop(mutex, &down, 1);
+                    //rc = rc - 1;
+                    //if(rc == 0) semop(db, &up, 1);
+                    //semop(mutex, &up, 1);
 				/*Just adds one more doWhile - Invalid input run*/
 				}else if (strcmp(token[0], "disc") == 0) {
 					printf("Disconnecting Client!\n");
@@ -230,21 +254,17 @@ int main (void) {
 					write(new_socket, menu, strlen(menu));
 					/*Second argument: 0 disables receive, 1 disables send, 2 disables both*/
 					shutdown(new_socket, 2);
-//semaphore_operation ( UNLOCK );	
 				}					
-				
 				bzero(res, RES);
 					
 			}while(strstr(buffer, "stop") == 0);
 			printf("\nExecuting Stop - Stopping Server Socket\n");
 			whilestop=1;
 			close(new_socket);
-//semaphore_operation ( UNLOCK );
 		}
 	}
 		
 	/*Writing File Operation*/
-//semaphore_operation ( LOCK );
 	fp = fopen("writing.csv","w");
 	
 	if (fp == NULL) {
@@ -257,7 +277,6 @@ int main (void) {
 	}
 	printf("\nWrote Dataset to File ./writing.csv\n");
 	fclose(fp);
-//semaphore_operation ( UNLOCK );
 	
 	/*ServerSocket closed*/
 	close(create_socket);

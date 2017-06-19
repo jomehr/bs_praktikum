@@ -40,26 +40,26 @@ int main(int argc , char *argv[]) {
     */
     //test write Data
     if (recv(clientsocket, res, RES, 0) < 0) {
-      puts("Receive failed");
+      puts("Receive failed!");
       break;
     }
     puts(res);
-    printf("write a string: \n");
+    printf("Input your command: \n");
     fgets(buffer, BUF, stdin);
     //Send Data
     if (send(clientsocket, buffer, BUF, 0) < 0) {
-      puts("Send failed");
+      puts("Send failed!");
       return 1;
     }else {
-      puts("Send succses");
+      puts("Send success!");
       puts(buffer);
     }
 
     if (recv(clientsocket, res, RES, 0) < 0) {
-      puts("Receive failed");
+      puts("Receive failed!");
       break;
     }
-    puts("Serverreply: ");
+    puts("Server reply:");
     puts(res);
   }
 
