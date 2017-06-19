@@ -35,8 +35,28 @@
 #define BUF 1024
 #define RES 1024
 
+//filemanagement
+FILE *fp;
+
 static struct sembuf semaphore;
 static int semid;
+
+static void saveData(struct Data *data){
+	fp = fopen("writing.csv","w");
+	
+	if (fp == NULL) {
+		printf("\nNo file found! - Creating File named: ./writing.csv\n");
+	}
+	fprintf(fp, "%i;\n", data->realSize);
+	fprintf(fp, "%i;\n", data->size);
+	
+	int i;
+	for (i=0; i<data->realSize; i++) {
+		fprintf(fp, "%i;%s;%s;\n", data->delFlag[i], data->key[i], data->value[i]);
+	}
+	printf("\nWrote Dataset to File ./writing.csv\n");
+	fclose(fp);
+}
 
 static int init_semaphore (void) {
    /*Testing, if there is an existing semaphore*/
@@ -70,7 +90,7 @@ static int semaphore_operation (int op) {
 
 int main (void) {
 	const int y = 1;
-	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, db, mutex, rc, i, k;
+	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, db, mutex, rc,i, k;
 	socklen_t addrlen;
 	ssize_t size;
 	struct sockaddr_in address;
@@ -79,7 +99,6 @@ int main (void) {
 	char* token[100];
 	char* separator = " ";
 	char key[BUF], value[BUF], res[BUF], readingRow[BUF];
-	FILE *fp;
   
 //semaphoreid = init_semaphore ();
 	if (semaphoreid < 0) return EXIT_FAILURE;
@@ -188,7 +207,7 @@ int main (void) {
 				if ((strlen(buffer)>0) && (buffer[strlen (buffer) - 1] == '\n')) {
 					buffer[strlen (buffer) - 1] = ' ';//\0 for telnet
 				}
-				printf("BufferContent:%s.\n", buffer);
+				//printf("BufferContent:%s.\n", buffer);
 				//adds a trailing whitespace to the buffer
 				/*if ((buffer[strlen (buffer) - 2] != ' ')) {
 					buffer[strlen (buffer) - 1] = ' ';
@@ -211,6 +230,7 @@ int main (void) {
 					put(token[1], token[2], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
+					saveData(shmdata);
 					//sleep(5000);
 					//semop(db,&up,1);
 				}else if (strcmp(token[0], "get") == 0) {
@@ -232,6 +252,7 @@ int main (void) {
 					del(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					write(new_socket, "\n", 2);
+					saveData(shmdata);
 					//semop(db, &up, 1);
 				}else if (strcmp(token[0], "list") == 0) {
 					//semop(mutex,&down,1);
@@ -265,18 +286,7 @@ int main (void) {
 	}
 		
 	/*Writing File Operation*/
-	fp = fopen("writing.csv","w");
-	
-	if (fp == NULL) {
-		printf("\nNo file found! - Creating File named: ./writing.csv\n");
-	}
-	fprintf(fp, "%i;\n", shmdata->realSize);
-	fprintf(fp, "%i;\n", shmdata->size);
-	for (i=0; i<shmdata->realSize; i++) {
-		fprintf(fp, "%i;%s;%s;\n", shmdata->delFlag[i], shmdata->key[i], shmdata->value[i]);
-	}
-	printf("\nWrote Dataset to File ./writing.csv\n");
-	fclose(fp);
+	saveData(shmdata);
 	
 	/*ServerSocket closed*/
 	close(create_socket);
