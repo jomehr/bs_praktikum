@@ -27,7 +27,8 @@
 int main (void) {
 	const int y = 1;
 	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, i, k;
-	int shmrcid, semid, mutex, rc;
+	//int shmrcid; 
+	int semid, mutex, rc;
 	socklen_t addrlen;
 	ssize_t size;
 	struct sockaddr_in address;
@@ -62,7 +63,7 @@ int main (void) {
 		exit(1);
 	}
 	
-	shmrcid=shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0777);
+	//shmrcid=shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0777);
 	semid=create_semaphore();
 	mutex=create_semaphore();
 	
