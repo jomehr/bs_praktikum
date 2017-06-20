@@ -1,8 +1,3 @@
-/*
-	If "Error occured, when creating semaphore!":
-	"ipcs" gets SemaphoreID
-	"ipcrm -s SemaphoreID" to delete it
-*/
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -18,6 +13,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "kvs.h"
+#include "semfuncs.c"
 #include "readwritestore.c"
 
 //Semaphore
@@ -28,37 +24,10 @@
 #define BUF 1024
 #define RES 1024
 
-struct sembuf semaphore;
-int shmrcid, semid, mutex, rc;
-
-int create_semaphore(){
-	int id = semget(IPC_PRIVATE,1,IPC_CREAT | 0777);
-	if(semid<0){
-		printf("Erzeugung der Semaphore fehlgeschlagen");
-	}
-	unsigned short marker[1];
-	marker[0] = 1;
-	if(semctl(id, 0, SETALL, marker)  < 0){
-		printf("Semaphoren initialisierung (CTL) Fehlgeschlagen");
-		return -1;
-	}
-	printf("Semaphore ID: %d\n",id);
-	return id;
-}
-
-int semaphore_op(int op, int sem){
-	semaphore.sem_op = op;
-	semaphore.sem_flg = SEM_UNDO;
-	if(semop(sem, &semaphore, 1) == -1){
-		perror("Fehler bei der Semaphoren operation");
-		return -1;
-	}
-	return 1;
-}
-
 int main (void) {
 	const int y = 1;
 	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, i, k;
+	int shmrcid, semid, mutex, rc;
 	socklen_t addrlen;
 	ssize_t size;
 	struct sockaddr_in address;
@@ -67,7 +36,7 @@ int main (void) {
 	char* token[100];
 	char* separator = " ";
 	char key[BUF], value[BUF], res[BUF];
-
+	
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0) {
 		printf("\nSocket created!\n");
 	}
@@ -88,21 +57,21 @@ int main (void) {
 	/*0644 to create a new segment with rw-r--r rights
 	0777 to create a new segment with unlimited access for all users*/
 	shmid = shmget(IPC_PRIVATE, sizeof(struct Data), IPC_CREAT|0777);
-
+	
 	shmrcid=shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0777);
 	semid=create_semaphore();
 	mutex=create_semaphore();
-
+	
 	/*attaches a shared memory segment identified by the variable shmid to the address space of the calling process*/
 	shmdata = (struct Data *) shmat(shmid,0,0);
 	shmdata->size = 0;
 	shmdata->realSize = 0;
-
+	
 	rc = (int*) shmat(shmrcid,0,0);
 	rc = 0;
-
+	
 	readData(shmdata);
-
+	
 	//Output file contents, if file exists
 	printf("realSize: %i\tSize: %i\n",shmdata->realSize, shmdata->size);
 	for (i=0; i<shmdata->size; i++) {
@@ -140,7 +109,7 @@ int main (void) {
 					buffer[strlen (buffer) - 1] = ' ';
 				}*/
 				strtoken(buffer, separator, token, 3);
-
+				
 				if(	!(strcmp(token[0], "put")) == 0  &&
 					!(strcmp(token[0], "get")) == 0  &&
 					!(strcmp(token[0], "del")) == 0  &&
@@ -163,19 +132,19 @@ int main (void) {
 					semaphore_op(LOCK,mutex);
 					rc++;
 					if(rc == 1){
-					semaphore_op(LOCK,semid);
-					}
+						semaphore_op(LOCK,semid);
+					} 
 					semaphore_op(UNLOCK,mutex);
 					printf("Executing get function...\n");
 					get(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					//write(new_socket, "\n", 2);
 					semaphore_op(LOCK,mutex);
-          rc--;
-          if(rc == 0){
-					semaphore_op(UNLOCK,semid);
-					}
-          semaphore_op(UNLOCK,mutex);
+                    rc--;
+                    if(rc == 0){
+						semaphore_op(UNLOCK,semid);
+					} 
+                    semaphore_op(UNLOCK,mutex);
 				}else if (strcmp(token[0], "del") == 0) {
 					semaphore_op(LOCK,semid);
 					printf("Executing del function...\n");
@@ -188,8 +157,8 @@ int main (void) {
 					semaphore_op(LOCK,mutex);
 					rc++;
 					if(rc == 1){
-					semaphore_op(LOCK,semid);
-					}
+						semaphore_op(LOCK,semid);
+					} 
 					semaphore_op(UNLOCK,mutex);
 					printf("Executing list function...\n");
 					bzero(res, RES);
@@ -197,20 +166,19 @@ int main (void) {
 					write(new_socket, res, RES);
 					//write(new_socket, "\n", 2);
 					semaphore_op(LOCK,mutex);
-          rc--;
-          if(rc == 0){
-					semaphore_op(UNLOCK,semid);
-					}
-          semaphore_op(UNLOCK,mutex);
-				//Just adds one more doWhile - Invalid input run
+                    rc--;
+                    if(rc == 0){
+						semaphore_op(UNLOCK,semid);
+					} 
+                    semaphore_op(UNLOCK,mutex);
 				}
-				/*else if (strcmp(token[0], "disc") == 0) {
+				else if (strcmp(token[0], "disc") == 0) {
 					printf("Disconnecting Client!\n");
 					char menu1[] = "Disconnected!\n";
 					write(new_socket, menu1, strlen(menu1));
 					//Second argument: 0 disables receive, 1 disables send, 2 disables both
 					shutdown(new_socket, 2);
-				}*/
+				}					
 				bzero(res, RES);
 			}while(strcmp(buffer, "stop") != 0);
 			printf("\nExecuting Stop - Stopping Server Socket\n");
@@ -218,12 +186,11 @@ int main (void) {
 			close(new_socket);
 		}
 	}
-
-	/*Writing File Operation*/
 	saveData(shmdata);
-
+	
 	/*ServerSocket closed*/
 	close(create_socket);
+	
 	/*
 	//Detach Shared Memory
 	shmdt(shmdata);
@@ -233,8 +200,9 @@ int main (void) {
 	printf("\nOptional, if \"semctl (semid, 0, IPC_RMID, 0)\" doesnt detach semaphore\nDelete semaphore with shell command \"$ ipcrm -s %d\"\n", semid);
 	//semctl (semid, 0, IPC_RMID, 0);
 	*/
+	
 	/*Kills Child*/
 	kill(pid, SIGTERM);
-
+	
 	return EXIT_SUCCESS;
 }

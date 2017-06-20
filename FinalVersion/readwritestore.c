@@ -1,7 +1,7 @@
 //#include "readwritestore.h"
 #include <stdio.h>
 #include <string.h>
-//Filemanagement
+
 FILE *fp;
 
 void saveData(struct Data *sdata){
