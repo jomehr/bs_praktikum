@@ -57,6 +57,10 @@ int main (void) {
 	/*0644 to create a new segment with rw-r--r rights
 	0777 to create a new segment with unlimited access for all users*/
 	shmid = shmget(IPC_PRIVATE, sizeof(struct Data), IPC_CREAT|0777);
+	if(shmid < 0){
+		perror("shmget fail");
+		exit(1);
+	}
 	
 	shmrcid=shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0777);
 	semid=create_semaphore();
@@ -67,8 +71,8 @@ int main (void) {
 	shmdata->size = 0;
 	shmdata->realSize = 0;
 	
-	rc = (int*) shmat(shmrcid,0,0);
-	rc = 0;
+	shmdata->rc = (int*) shmat(shmid,0,0);
+	shmdata->rc = 0;
 	
 	readData(shmdata);
 	
@@ -130,8 +134,8 @@ int main (void) {
 					semaphore_op(UNLOCK,semid);
 				}else if (strcmp(token[0], "get") == 0) {
 					semaphore_op(LOCK,mutex);
-					rc++;
-					if(rc == 1){
+					shmdata->rc++;
+					if(shmdata->rc== 1){
 						semaphore_op(LOCK,semid);
 					} 
 					semaphore_op(UNLOCK,mutex);
@@ -139,9 +143,10 @@ int main (void) {
 					get(token[1], res, shmdata);
 					write(new_socket, res, RES);
 					//write(new_socket, "\n", 2);
+					sleep(5);
 					semaphore_op(LOCK,mutex);
-                    rc--;
-                    if(rc == 0){
+                    shmdata->rc--;
+                    if(shmdata->rc== 0){
 						semaphore_op(UNLOCK,semid);
 					} 
                     semaphore_op(UNLOCK,mutex);
@@ -155,8 +160,8 @@ int main (void) {
 					semaphore_op(UNLOCK,semid);
 				}else if (strcmp(token[0], "list") == 0) {
 					semaphore_op(LOCK,mutex);
-					rc++;
-					if(rc == 1){
+					shmdata->rc++;
+					if(shmdata->rc== 1){
 						semaphore_op(LOCK,semid);
 					} 
 					semaphore_op(UNLOCK,mutex);
@@ -166,8 +171,8 @@ int main (void) {
 					write(new_socket, res, RES);
 					//write(new_socket, "\n", 2);
 					semaphore_op(LOCK,mutex);
-                    rc--;
-                    if(rc == 0){
+                    shmdata->rc--;
+                    if(shmdata->rc == 0){
 						semaphore_op(UNLOCK,semid);
 					} 
                     semaphore_op(UNLOCK,mutex);

@@ -17,7 +17,7 @@ void saveData(struct Data *sdata){
 	for (i=0; i<sdata->size; i++) {
 		fprintf(fp, "%i;%s;%s;\n", sdata->delFlag[i], sdata->key[i], sdata->value[i]);
 	}
-	printf("\nWrote Dataset to File ./writing.csv\n");
+	printf("\nWrote dataset to File ./writing.csv\n");
 	fclose(fp);
 }
 

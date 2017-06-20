@@ -10,6 +10,7 @@ struct Data{
 	int delFlag[BUF];				
 	int size;						
 	int realSize;
+	int rc;
 };
 
 extern int strtoken(char* str, char* separator, char** token, int size);
