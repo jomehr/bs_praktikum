@@ -26,7 +26,7 @@
 
 int main (void) {
 	const int y = 1;
-	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, i, k;
+	int create_socket, new_socket, shmid, pid, whilestop=0, semaphoreid, i, k, portnr;
 	//int shmrcid; 
 	int semid, mutex, rc;
 	socklen_t addrlen;
@@ -41,11 +41,16 @@ int main (void) {
 	if ((create_socket=socket (AF_INET, SOCK_STREAM, 0)) > 0) {
 		printf("\nSocket created!\n");
 	}
-
+	
+	do{
+		printf("Enter which port should be used\nPort has to be over 1024: ");
+		scanf("%i", portnr);
+    }while(port<1024);
+	
 	setsockopt (create_socket, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons (1500);
+	address.sin_port = htons (portnr);
 
 	if (bind ( create_socket, (struct sockaddr *) &address, sizeof (address)) != 0) {
 		printf("\nThe port is not free - busy!\n");
